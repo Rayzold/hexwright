@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #16120e; }
+  body { font-family: "IBM Plex Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #d9803f; text-decoration: none; }
+  a:hover { color: #eea468; text-decoration: underline; }
+  input[type="range"] { -webkit-appearance: none; appearance: none; height: 3px; background: #3a3025; border-radius: 2px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #e6ddcd; border: 2px solid #16120e; cursor: grab; }
+  input[type="range"]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: #e6ddcd; border: 2px solid #16120e; cursor: grab; }
+  input[type="text"], input[type="number"], select, textarea { font-family: "IBM Plex Mono", monospace; }
+  input:focus, select:focus, textarea:focus { outline: 1px solid #c05a2b; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: #16120e; }
+  ::-webkit-scrollbar-thumb { background: #3a3025; border-radius: 5px; }
+</style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; height: 100vh; width: 100%; background: #16120e; color: #e6ddcd; overflow: hidden;">
+
+  <header style="display: flex; align-items: center; gap: 22px; padding: 0 18px; height: 54px; flex: 0 0 auto; borderBottom: 1px solid #322a20; background: #1b1712;">
+    <div style="display: flex; align-items: baseline; gap: 9px;">
+      <span style="font-family: 'Cormorant Garamond', serif; font-size: 25px; font-weight: 600; letter-spacing: 0.16em; color: #f0e7d6;">HEXWRIGHT</span>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.22em; color: #8a7f6c; text-transform: uppercase;">survey &amp; passage</span>
+    </div>
+
+    <div style="display: flex; gap: 2px; padding: 3px; background: #100d0a; border: 1px solid #322a20; border-radius: 3px;">
+      <button onClick="{{ toForge }}" style="{{ forgeTabStyle }}">Forge</button>
+      <button onClick="{{ toTable }}" style="{{ tableTabStyle }}">Table</button>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase;">Sight</span>
+      <div style="display: flex; gap: 2px; padding: 3px; background: #100d0a; border: 1px solid #322a20; border-radius: 3px;">
+        <button onClick="{{ toGm }}" style="{{ gmTabStyle }}">Warden</button>
+        <button onClick="{{ toPlayers }}" style="{{ playersTabStyle }}">Party</button>
+      </div>
+      <div style="width: 1px; height: 22px; background: #322a20; margin: 0 6px;"></div>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9a8f7c; min-width: 44px; text-align: right;">{{ zoomLabel }}</span>
+      <button onClick="{{ zoomOut }}" style="width: 26px; height: 26px; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 14px; line-height: 1; cursor: pointer;" style-hover="background: #302920;">&minus;</button>
+      <button onClick="{{ zoomIn }}" style="width: 26px; height: 26px; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 14px; line-height: 1; cursor: pointer;" style-hover="background: #302920;">+</button>
+    </div>
+  </header>
+
+  <div style="display: flex; flex: 1 1 auto; min-height: 0;">
+
+    <aside style="width: 268px; flex: 0 0 268px; border-right: 1px solid #322a20; background: #1b1712; overflow-y: auto; padding: 16px 15px 28px;">
+
+      <sc-if value="{{ isForge }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 12px;">The Forge</div>
+
+          <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Seed word</label>
+          <div style="display: flex; gap: 6px; margin-bottom: 16px;">
+            <input type="text" name="seed" value="{{ pSeed }}" onChange="{{ onText }}" style="flex: 1 1 auto; min-width: 0; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 8px;" />
+            <button onClick="{{ reroll }}" title="New seed" style="flex: 0 0 auto; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 12px; padding: 0 9px; cursor: pointer;" style-hover="background: #302920;">&#8635;</button>
+          </div>
+
+          <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Extent</label>
+          <select name="size" value="{{ pSize }}" onChange="{{ onText }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 8px; margin-bottom: 14px;">
+            <option value="small">Region &mdash; 30 &times; 22</option>
+            <option value="medium">Kingdom &mdash; 46 &times; 32</option>
+            <option value="large">Continent &mdash; 70 &times; 50</option>
+          </select>
+
+          <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Edge of the map</label>
+          <select name="edge" value="{{ pEdge }}" onChange="{{ onEdge }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 8px; margin-bottom: 14px;">
+            <option value="sea">Sea-girt &mdash; ocean all round</option>
+            <option value="open">Unsurveyed &mdash; land runs off the edge</option>
+          </select>
+
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 18px;">
+            <label style="font-size: 11px; color: #9a8f7c; flex: 1 1 auto;">Miles per hex</label>
+            <input type="number" name="hexMiles" min="1" max="60" value="{{ pHexMiles }}" onChange="{{ onNumber }}" style="width: 62px; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 5px 7px; text-align: right;" />
+          </div>
+
+          <div style="height: 1px; background: #2b241c; margin: 0 0 16px;"></div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Sea level</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vSea }}</span></div>
+          <input type="range" name="sea" min="15" max="70" value="{{ pSea }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 15px;" />
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Climate</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vClimate }}</span></div>
+          <input type="range" name="climate" min="0" max="100" value="{{ pClimate }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 15px;" />
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Wetness</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vWet }}</span></div>
+          <input type="range" name="wet" min="0" max="100" value="{{ pWet }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 15px;" />
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Uplift</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vMtn }}</span></div>
+          <input type="range" name="mountains" min="0" max="100" value="{{ pMountains }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 15px;" />
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Watercourses</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vRivers }}</span></div>
+          <input type="range" name="rivers" min="0" max="100" value="{{ pRivers }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 15px;" />
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Habitation</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vSettle }}</span></div>
+          <input type="range" name="settlements" min="0" max="100" value="{{ pSettlements }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 15px;" />
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #9a8f7c; margin-bottom: 6px;"><span>Wild sites</span><span style="font-family: 'IBM Plex Mono', monospace; color: #c9bda7;">{{ vPois }}</span></div>
+          <input type="range" name="pois" min="0" max="100" value="{{ pPois }}" onChange="{{ onRange }}" style="width: 100%; margin-bottom: 18px;" />
+
+          <button onClick="{{ regenerate }}" style="width: 100%; padding: 10px; background: #b8511f; color: #fdf3e2; border: none; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;" style-hover="background: #c95e28;">Forge the world</button>
+          <div style="font-size: 10px; color: #6f6656; margin-top: 8px; line-height: 1.5;">Reforging redraws terrain and rebuilds generated holdings. Anything you placed by hand is kept.</div>
+
+          <div style="height: 1px; background: #2b241c; margin: 20px 0 14px;"></div>
+
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 10px;">Layers</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button name="grid" onClick="{{ toggleLayer }}" style="{{ layerGridStyle }}">Hex grid</button>
+            <button name="rivers" onClick="{{ toggleLayer }}" style="{{ layerRiversStyle }}">Rivers</button>
+            <button name="roads" onClick="{{ toggleLayer }}" style="{{ layerRoadsStyle }}">Roads</button>
+            <button name="borders" onClick="{{ toggleLayer }}" style="{{ layerBordersStyle }}">Realms</button>
+            <button name="labels" onClick="{{ toggleLayer }}" style="{{ layerLabelsStyle }}">Names</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 12px;">The Party</div>
+
+          <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Pace</label>
+          <select name="speed" value="{{ pSpeed }}" onChange="{{ onParty }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 8px; margin-bottom: 13px;">
+            <option value="foot">On foot &mdash; 24 mi/day</option>
+            <option value="mounted">Mounted &mdash; 36 mi/day</option>
+            <option value="ship">By ship &mdash; 48 mi/day</option>
+          </select>
+
+          <div style="display: flex; gap: 8px; margin-bottom: 13px;">
+            <div style="flex: 1 1 0; min-width: 0;">
+              <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Season</label>
+              <select name="season" value="{{ pSeason }}" onChange="{{ onParty }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 7px;">
+                <option value="spring">Spring</option>
+                <option value="summer">Summer</option>
+                <option value="autumn">Autumn</option>
+                <option value="winter">Winter</option>
+              </select>
+            </div>
+            <div style="flex: 1 1 0; min-width: 0;">
+              <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Weather</label>
+              <select name="weather" value="{{ pWeather }}" onChange="{{ onParty }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 7px;">
+                <option value="clear">Clear</option>
+                <option value="rain">Rain</option>
+                <option value="storm">Storm</option>
+                <option value="snow">Snow</option>
+                <option value="fog">Fog</option>
+              </select>
+            </div>
+          </div>
+
+          <button onClick="{{ toggleMarch }}" style="{{ marchStyle }}">Forced march &mdash; +25% pace, exhaustion at dusk</button>
+
+          <div style="height: 1px; background: #2b241c; margin: 16px 0 14px;"></div>
+
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 10px;">Reckoning</div>
+          <div style="display: flex; align-items: baseline; gap: 7px; font-family: 'Cormorant Garamond', serif; font-size: 20px; color: #f0e7d6; margin-bottom: 3px; white-space: nowrap;">
+            <span>{{ dateLong }}</span>
+          </div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #7d7361; margin-bottom: 14px;">{{ campaignDayLabel }}</div>
+
+          <div style="height: 1px; background: #2b241c; margin: 0 0 14px;"></div>
+
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 8px;">Plotting</div>
+          <div style="font-size: 11px; color: #8e8471; line-height: 1.65; margin-bottom: 10px;">{{ plotHint }}</div>
+          <div style="display: flex; gap: 2px; padding: 3px; background: #100d0a; border: 1px solid #322a20; border-radius: 3px; margin-bottom: 10px;">
+            <button onClick="{{ toManual }}" style="{{ manualTabStyle }}">By hand</button>
+            <button onClick="{{ toAuto }}" style="{{ autoTabStyle }}">Find the way</button>
+          </div>
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <button onClick="{{ clearRoute }}" style="flex: 1 1 0; padding: 7px; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 11px; cursor: pointer;" style-hover="background: #302920;">Clear way</button>
+            <button onClick="{{ popWaypoint }}" style="flex: 1 1 0; padding: 7px; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 11px; cursor: pointer;" style-hover="background: #302920;">Undo leg</button>
+          </div>
+
+          <div style="height: 1px; background: #2b241c; margin: 0 0 14px;"></div>
+
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 8px;">Fog</div>
+          <div style="display: flex; gap: 6px;">
+            <button onClick="{{ revealAll }}" style="flex: 1 1 0; padding: 7px; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 11px; cursor: pointer;" style-hover="background: #302920;">Reveal all</button>
+            <button onClick="{{ hideAll }}" style="flex: 1 1 0; padding: 7px; background: #241f19; color: #cfc4b0; border: 1px solid #3a3025; border-radius: 3px; font-size: 11px; cursor: pointer;" style-hover="background: #302920;">Shroud all</button>
+          </div>
+          <div style="font-size: 10px; color: #6f6656; margin-top: 8px; line-height: 1.5;">{{ fogLabel }}</div>
+        </div>
+      </sc-if>
+    </aside>
+
+    <main ref="{{ stageRef }}" style="flex: 1 1 auto; min-width: 0; overflow: auto; background: #100d0a; position: relative;">
+      <div style="{{ stageStyle }}">
+        <canvas ref="{{ canvasRef }}" style="{{ canvasStyle }}"></canvas>
+        <svg ref="{{ svgRef }}" viewBox="{{ viewBox }}" onClick="{{ onMapClick }}" onMouseDown="{{ onMapDown }}" onMouseMove="{{ onMapMove }}" onMouseLeave="{{ onMapLeave }}" onMouseUp="{{ onMapUp }}" style="{{ svgStyle }}">
+          <polyline points="{{ routePoints }}" fill="none" stroke="{{ routeShadow }}" stroke-width="4.2" stroke-linejoin="round" stroke-linecap="round" opacity="0.5"></polyline>
+          <polyline points="{{ routePoints }}" fill="none" stroke="{{ accentColor }}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"></polyline>
+
+          <sc-for list="{{ waypointMarks }}" as="w" hint-placeholder-count="0">
+            <g transform="{{ w.transform }}" onMouseDown="{{ w.onDown }}" style="cursor: grab;">
+              <circle r="7.5" fill="#16120e" opacity="0.55"></circle>
+              <circle r="5.2" fill="{{ accentColor }}" stroke="#fdf3e2" stroke-width="1.4"></circle>
+              {{ w.numEl }}
+            </g>
+          </sc-for>
+
+          <sc-for list="{{ marks }}" as="m" hint-placeholder-count="12">
+            <g transform="{{ m.transform }}" onClick="{{ m.onClick }}" onMouseDown="{{ m.onDown }}" opacity="{{ m.opacity }}" style="cursor: pointer;">
+              <circle r="{{ m.hit }}" fill="transparent"></circle>
+              <sc-if value="{{ m.isSite }}" hint-placeholder-val="{{ false }}">
+                <polygon points="{{ m.sitePoints }}" fill="{{ m.fill }}" stroke="{{ m.stroke }}" stroke-width="1.1"></polygon>
+              </sc-if>
+              <sc-if value="{{ m.isTown }}" hint-placeholder-val="{{ true }}">
+                <g>
+                  <circle r="{{ m.r }}" fill="{{ m.fill }}" stroke="{{ m.stroke }}" stroke-width="1.1"></circle>
+                  <circle r="{{ m.rInner }}" fill="{{ m.stroke }}"></circle>
+                </g>
+              </sc-if>
+              {{ m.labelEl }}
+            </g>
+          </sc-for>
+
+          <polygon points="{{ selPoints }}" fill="none" stroke="{{ accentColor }}" stroke-width="1.8"></polygon>
+          <polygon points="{{ hoverPoints }}" fill="{{ hoverFill }}" stroke="{{ hoverStroke }}" stroke-width="1.1"></polygon>
+        </svg>
+      </div>
+
+      <div style="position: absolute; left: 14px; bottom: 14px; display: flex; align-items: flex-end; gap: 10px; pointer-events: none;">
+        <div style="background: rgba(16, 13, 10, 0.9); border: 1px solid #322a20; border-radius: 3px; padding: 8px 11px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="{{ scaleBarStyle }}"></div>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #c9bda7;">{{ scaleLabel }}</span>
+          </div>
+        </div>
+        <div style="background: rgba(16, 13, 10, 0.9); border: 1px solid #322a20; border-radius: 3px; padding: 8px 11px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #9a8f7c;">{{ hoverLabel }}</div>
+      </div>
+    </main>
+
+    <aside style="width: 316px; flex: 0 0 316px; border-left: 1px solid #322a20; background: #1b1712; overflow-y: auto; padding: 16px 15px 28px;">
+
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-bottom: 20px;">
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 12px;">Passage</div>
+
+          <sc-if value="{{ noRoute }}" hint-placeholder-val="{{ true }}">
+            <div style="border: 1px dashed #3a3025; border-radius: 3px; padding: 18px 14px; text-align: center; font-size: 11px; color: #7d7361; line-height: 1.6;">No way plotted. Click a hex on the map to set the party down.</div>
+          </sc-if>
+
+          <sc-if value="{{ hasRoute }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px;">
+                <span style="font-family: 'Cormorant Garamond', serif; font-size: 42px; line-height: 1; color: #f0e7d6;">{{ daysBig }}</span>
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9a8f7c;">days on the road</span>
+              </div>
+              <div style="font-size: 12px; color: #a8583a; margin-bottom: 16px;">Arrives {{ arrivalLabel }}</div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #2b241c; border: 1px solid #2b241c; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
+                <div style="background: #201b15; padding: 9px 11px;">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 3px;">Hexes</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #e6ddcd;">{{ hexCount }}</div>
+                </div>
+                <div style="background: #201b15; padding: 9px 11px;">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 3px;">Along the way</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #e6ddcd;">{{ pathMiles }}</div>
+                </div>
+                <div style="background: #201b15; padding: 9px 11px;">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 3px;">As the crow flies</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #e6ddcd;">{{ crowMiles }}</div>
+                </div>
+                <div style="background: #201b15; padding: 9px 11px;">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 3px;">Effective pace</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 15px; color: #e6ddcd;">{{ effPace }}</div>
+                </div>
+              </div>
+
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 7px;">Ground crossed</div>
+              <div style="display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px;">
+                <sc-for list="{{ terrainBreak }}" as="t" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; background: {{ t.color }};"></span>
+                    <span style="font-size: 11px; color: #c9bda7; flex: 1 1 auto;">{{ t.name }}</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8e8471;">{{ t.detail }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="border: 1px solid #2b241c; border-radius: 3px; padding: 10px 11px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase;">Encounter checks</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #e6ddcd;">{{ checkCount }}</span>
+                </div>
+                <div style="font-size: 11px; color: #8e8471; line-height: 1.55;">{{ checkLabel }}</div>
+              </div>
+
+              <div style="{{ exhaustStyle }}">{{ exhaustLabel }}</div>
+
+              <button onClick="{{ march }}" style="width: 100%; padding: 10px; background: #b8511f; color: #fdf3e2; border: none; border-radius: 3px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; margin-top: 12px;" style-hover="background: #c95e28;">March the way</button>
+              <div style="font-size: 10px; color: #6f6656; margin-top: 7px; line-height: 1.5;">Advances the calendar, lifts the fog along the road, and rolls the checks into the log.</div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="height: 1px; background: #2b241c; margin: 0 0 14px;"></div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 10px;">Log</div>
+        <sc-if value="{{ emptyLog }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size: 11px; color: #6f6656; line-height: 1.6;">Nothing yet. Marches are recorded here.</div>
+        </sc-if>
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <sc-for list="{{ journal }}" as="j" hint-placeholder-count="0">
+            <div style="border-left: 2px solid #3a3025; padding: 0 0 0 10px;">
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #7d7361; margin-bottom: 2px;">{{ j.when }}</div>
+              <div style="font-size: 12px; color: #c9bda7; line-height: 1.5;">{{ j.text }}</div>
+              <div style="font-size: 11px; color: {{ j.tone }}; line-height: 1.5; margin-top: 2px;">{{ j.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isForge }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 10px;">Terrain brush</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+            <button name="t:grass" onClick="{{ pickTool }}" style="{{ brGrassStyle }}">Grassland</button>
+            <button name="t:forest" onClick="{{ pickTool }}" style="{{ brForestStyle }}">Forest</button>
+            <button name="t:hills" onClick="{{ pickTool }}" style="{{ brHillsStyle }}">Hills</button>
+            <button name="t:mountains" onClick="{{ pickTool }}" style="{{ brMountainsStyle }}">Mountains</button>
+            <button name="t:swamp" onClick="{{ pickTool }}" style="{{ brSwampStyle }}">Marsh</button>
+            <button name="t:desert" onClick="{{ pickTool }}" style="{{ brDesertStyle }}">Desert</button>
+            <button name="t:snow" onClick="{{ pickTool }}" style="{{ brSnowStyle }}">Snowcap</button>
+            <button name="t:ocean" onClick="{{ pickTool }}" style="{{ brOceanStyle }}">Water</button>
+          </div>
+          <div style="font-size: 10px; color: #6f6656; line-height: 1.5; margin-bottom: 18px;">{{ brushHint }}</div>
+
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 10px;">Stamps</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+            <button name="city" onClick="{{ pickTool }}" style="{{ toolCityStyle }}">City</button>
+            <button name="town" onClick="{{ pickTool }}" style="{{ toolTownStyle }}">Town</button>
+            <button name="village" onClick="{{ pickTool }}" style="{{ toolVillageStyle }}">Village</button>
+            <button name="keep" onClick="{{ pickTool }}" style="{{ toolKeepStyle }}">Keep</button>
+            <button name="ruin" onClick="{{ pickTool }}" style="{{ toolRuinStyle }}">Ruin</button>
+            <button name="dungeon" onClick="{{ pickTool }}" style="{{ toolDungeonStyle }}">Dungeon</button>
+            <button name="camp" onClick="{{ pickTool }}" style="{{ toolCampStyle }}">Camp</button>
+            <button name="" onClick="{{ pickTool }}" style="{{ toolNoneStyle }}">Select</button>
+          </div>
+          <div style="font-size: 10px; color: #6f6656; line-height: 1.5; margin-bottom: 18px;">{{ toolHint }}</div>
+
+          <div style="height: 1px; background: #2b241c; margin: 0 0 14px;"></div>
+
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 12px;">Inspector</div>
+
+          <sc-if value="{{ nothingSelected }}" hint-placeholder-val="{{ true }}">
+            <div style="border: 1px dashed #3a3025; border-radius: 3px; padding: 18px 14px; text-align: center; font-size: 11px; color: #7d7361; line-height: 1.6;">Nothing selected. Click a holding to name it, or a hex to read the ground.</div>
+          </sc-if>
+
+          <sc-if value="{{ objSelected }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Name</label>
+              <input type="text" value="{{ selName }}" onChange="{{ onSelName }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 13px; padding: 7px 9px; margin-bottom: 12px;" />
+
+              <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <div style="flex: 1 1 0; min-width: 0;">
+                  <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Kind</label>
+                  <select value="{{ selType }}" onChange="{{ onSelType }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 7px;">
+                    <option value="city">City</option>
+                    <option value="town">Town</option>
+                    <option value="village">Village</option>
+                    <option value="keep">Keep</option>
+                    <option value="ruin">Ruin</option>
+                    <option value="dungeon">Dungeon</option>
+                    <option value="camp">Camp</option>
+                  </select>
+                </div>
+                <div style="flex: 0 0 104px;">
+                  <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Souls</label>
+                  <input type="number" min="0" step="50" value="{{ selPop }}" onChange="{{ onSelPop }}" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 6px 7px; text-align: right;" />
+                </div>
+              </div>
+
+              <label style="display: block; font-size: 11px; color: #9a8f7c; margin-bottom: 5px;">Warden's notes</label>
+              <textarea value="{{ selNotes }}" onChange="{{ onSelNotes }}" rows="4" style="width: 100%; background: #100d0a; border: 1px solid #3a3025; border-radius: 3px; color: #e6ddcd; font-size: 12px; padding: 7px 9px; resize: vertical; line-height: 1.5; margin-bottom: 12px;"></textarea>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #2b241c; border: 1px solid #2b241c; border-radius: 3px; overflow: hidden; margin-bottom: 12px;">
+                <div style="background: #201b15; padding: 8px 10px;">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 3px;">Hex</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #e6ddcd;">{{ selHex }}</div>
+                </div>
+                <div style="background: #201b15; padding: 8px 10px;">
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.16em; color: #7d7361; text-transform: uppercase; margin-bottom: 3px;">Ground</div>
+                  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #e6ddcd;">{{ selGround }}</div>
+                </div>
+              </div>
+
+              <div style="font-size: 11px; color: #8e8471; line-height: 1.6; margin-bottom: 12px;">{{ selRealm }}</div>
+
+              <button onClick="{{ deleteSel }}" style="width: 100%; padding: 9px; background: transparent; color: #b06a4a; border: 1px solid #4a3428; border-radius: 3px; font-size: 11px; cursor: pointer;" style-hover="background: #2a1c15; color: #cf8562;">Raze this holding</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ hexSelected }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <div style="font-family: 'Cormorant Garamond', serif; font-size: 26px; color: #f0e7d6; margin-bottom: 2px;">{{ selGround }}</div>
+              <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #7d7361; margin-bottom: 14px;">Hex {{ selHex }}</div>
+              <div style="display: flex; flex-direction: column; gap: 7px;">
+                <sc-for list="{{ hexFacts }}" as="f" hint-placeholder-count="5">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 6px; border-bottom: 1px solid #241f19;">
+                    <span style="font-size: 11px; color: #8e8471;">{{ f.k }}</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #d6cab4; text-align: right;">{{ f.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font-size: 11px; color: #8e8471; line-height: 1.6; margin-top: 14px;">{{ selRealm }}</div>
+            </div>
+          </sc-if>
+
+          <div style="height: 1px; background: #2b241c; margin: 20px 0 14px;"></div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.2em; color: #7d7361; text-transform: uppercase; margin-bottom: 10px;">Gazetteer</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <sc-for list="{{ realms }}" as="r" hint-placeholder-count="4">
+              <div style="display: flex; align-items: center; gap: 9px;">
+                <span style="width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; background: {{ r.color }};"></span>
+                <input type="text" value="{{ r.name }}" onChange="{{ r.onName }}" style="flex: 1 1 auto; min-width: 0; background: transparent; border: none; border-bottom: 1px solid #2b241c; color: #d6cab4; font-family: 'Cormorant Garamond', serif; font-size: 15px; padding: 3px 0;" style-hover="border-bottom-color: #5c4a33;" />
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #7d7361; flex: 0 0 auto;">{{ r.detail }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #6f6656; margin-top: 14px; line-height: 1.6;">{{ tally }}</div>
+        </div>
+      </sc-if>
+    </aside>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#c05a2b&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#c05a2b&quot;,&quot;#b8433f&quot;,&quot;#4b7d8c&quot;,&quot;#7a6a3a&quot;],&quot;section&quot;:&quot;Look&quot;},&quot;mapTheme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;parchment&quot;,&quot;options&quot;:[&quot;parchment&quot;,&quot;dusk&quot;],&quot;tsType&quot;:&quot;'parchment' | 'dusk'&quot;,&quot;section&quot;:&quot;Look&quot;},&quot;startMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;forge&quot;,&quot;options&quot;:[&quot;forge&quot;,&quot;table&quot;],&quot;tsType&quot;:&quot;'forge' | 'table'&quot;,&quot;section&quot;:&quot;Behaviour&quot;}}">
+const S = 11, SQ3 = Math.sqrt(3);
+const SIZES = { small: [30, 22], medium: [46, 32], large: [70, 50] };
+const MONTHS = ["Hammer", "Alturiak", "Ches", "Tarsakh", "Mirtul", "Kythorn", "Flamerule", "Eleasis", "Eleint", "Marpenoth", "Uktar", "Nightal"];
+const PACE = { foot: 24, mounted: 36, ship: 48 };
+const SEASON_MOD = { spring: 1, summer: 1.05, autumn: 0.95, winter: 0.78 };
+const WEATHER_MOD = { clear: 1, rain: 0.85, storm: 0.6, snow: 0.55, fog: 0.8 };
+const BIOMES = {
+  deep:      { name: "Deep water", cost: null, wild: 0.3, water: true },
+  ocean:     { name: "Open sea",   cost: null, wild: 0.3, water: true },
+  shallow:   { name: "Shoal",      cost: null, wild: 0.25, water: true },
+  beach:     { name: "Strand",     cost: 1.0,  wild: 0.2 },
+  grass:     { name: "Grassland",  cost: 1.0,  wild: 0.25 },
+  savanna:   { name: "Savanna",    cost: 1.1,  wild: 0.3 },
+  desert:    { name: "Desert",     cost: 1.6,  wild: 0.45 },
+  forest:    { name: "Forest",     cost: 1.5,  wild: 0.4 },
+  jungle:    { name: "Jungle",     cost: 2.4,  wild: 0.6 },
+  taiga:     { name: "Boreal wood",cost: 1.6,  wild: 0.4 },
+  tundra:    { name: "Tundra",     cost: 1.4,  wild: 0.3 },
+  swamp:     { name: "Marsh",      cost: 2.2,  wild: 0.55 },
+  hills:     { name: "Hills",      cost: 1.9,  wild: 0.35 },
+  mountains: { name: "Mountains",  cost: 3.2,  wild: 0.5 },
+  snow:      { name: "Snowcap",    cost: 2.8,  wild: 0.5 }
+};
+const THEMES = {
+  parchment: {
+    paper: "#e9dfc4", ink: "#4a3b28", grid: "rgba(74,59,40,0.16)", coast: "#5c4a33",
+    river: "#7d9fae", road: "#8b6a44", border: "#a35a34", fog: "rgba(22,18,14,0.86)",
+    label: "#3b2f22", halo: "rgba(233,223,196,0.85)", site: "#3b2f22",
+    deep: "#9fb6c0", ocean: "#b3c7cd", shallow: "#c6d5d6", beach: "#eee2c1",
+    grass: "#cdd3a2", savanna: "#dbcf99", desert: "#e7dca4", forest: "#a9bd8d",
+    jungle: "#8fae7c", taiga: "#a0b49d", tundra: "#d0d1c3", swamp: "#a8ae86",
+    hills: "#c5bb90", mountains: "#b2a78d", snow: "#efece2"
+  },
+  dusk: {
+    paper: "#131a21", ink: "#c8d4dd", grid: "rgba(200,212,221,0.10)", coast: "#7b93a4",
+    river: "#5c8ea8", road: "#9c8358", border: "#c4703f", fog: "rgba(4,7,10,0.88)",
+    label: "#e7eef4", halo: "rgba(11,16,21,0.85)", site: "#e7eef4",
+    deep: "#111b26", ocean: "#182734", shallow: "#213543", beach: "#4e4staging",
+    grass: "#3d4f38", savanna: "#514c30", desert: "#5c5540", forest: "#2e4432",
+    jungle: "#28432f", taiga: "#31453e", tundra: "#4a534f", swamp: "#38412e",
+    hills: "#4a4636", mountains: "#555044", snow: "#8b8f8a"
+  }
+};
+THEMES.dusk.beach = "#4e4a38";
+
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function vnoise(x, y, seed) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const h = (a, b) => {
+    let n = Math.imul(a, 374761393) + Math.imul(b, 668265263) + Math.imul(seed, 1274126177);
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  };
+  const sx = xf * xf * (3 - 2 * xf), sy = yf * yf * (3 - 2 * yf);
+  const a = h(xi, yi), b = h(xi + 1, yi), c = h(xi, yi + 1), d = h(xi + 1, yi + 1);
+  return (a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy;
+}
+function fbm(x, y, seed, oct, gain) {
+  let v = 0, amp = 1, f = 1, norm = 0;
+  for (let i = 0; i < oct; i++) { v += amp * vnoise(x * f, y * f, seed + i * 7919); norm += amp; amp *= gain; f *= 2; }
+  return v / norm;
+}
+
+const SYL_A = ["ael", "bar", "cor", "dun", "eth", "fal", "gor", "hal", "ith", "kel", "lor", "mar", "nor", "orm", "pel", "quen", "ras", "sel", "tor", "val", "wyr", "zan", "brim", "cald", "drov", "esk", "grim", "hesp", "kirn", "loth"];
+const SYL_B = ["mere", "ford", "hollow", "reach", "spire", "gate", "watch", "fell", "moor", "hearth", "barrow", "stead", "crag", "vale", "wick", "haven", "march", "hold", "run", "bridge", "keep", "cross", "deep", "rest"];
+const REALM_B = ["Dominion", "Reach", "Marches", "Concord", "Hegemony", "Freeholds", "Protectorate", "League", "Cantons", "Suzerainty"];
+const SITE_A = ["Sunken", "Whispering", "Broken", "Ashen", "Hollow", "Weeping", "Iron", "Pale", "Thorned", "Drowned", "Gilded", "Forsaken"];
+const SITE_B = ["Abbey", "Barrow", "Cairn", "Cistern", "Fane", "Menhir", "Obelisk", "Sepulchre", "Warren", "Ziggurat", "Bastion", "Mine"];
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+function placeName(rng) { return cap(pick(rng, SYL_A)) + pick(rng, SYL_B); }
+function siteName(rng) { return "The " + pick(rng, SITE_A) + " " + pick(rng, SITE_B); }
+
+const CORNERS = [];
+for (let ci = 0; ci < 6; ci++) { const ca = (Math.PI / 180) * (60 * ci - 90); CORNERS.push([S * Math.cos(ca), S * Math.sin(ca)]); }
+
+class Heap {
+  constructor() { this.a = []; }
+  push(n) { const a = this.a; a.push(n); let i = a.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (a[p][0] <= a[i][0]) break; const t = a[p]; a[p] = a[i]; a[i] = t; i = p; } }
+  pop() { const a = this.a, top = a[0], last = a.pop(); if (a.length) { a[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < a.length && a[l][0] < a[m][0]) m = l; if (r < a.length && a[r][0] < a[m][0]) m = r; if (m === i) break; const t = a[m]; a[m] = a[i]; a[i] = t; i = m; } } return top; }
+  get size() { return this.a.length; }
+}
+
+function toCube(c, r) { const x = c - (r - (r & 1)) / 2, z = r; return [x, -x - z, z]; }
+function fromCube(x, z) { return [x + (z - (z & 1)) / 2, z]; }
+function cubeRound(x, y, z) {
+  let rx = Math.round(x), ry = Math.round(y), rz = Math.round(z);
+  const dx = Math.abs(rx - x), dy = Math.abs(ry - y), dz = Math.abs(rz - z);
+  if (dx > dy && dx > dz) rx = -ry - rz; else if (dy > dz) ry = -rx - rz; else rz = -rx - ry;
+  return [rx, ry, rz];
+}
+
+class Component extends DCLogic {
+  state = {
+    mode: "forge",
+    params: { seed: "Aurelmoor", size: "large", hexMiles: 6, sea: 42, climate: 52, wet: 50, mountains: 55, rivers: 50, settlements: 46, pois: 40, edge: "sea" },
+    paint: {}, paintV: 0, routeMode: "manual", realmNames: {},
+    layers: { grid: true, rivers: true, roads: true, borders: true, labels: true },
+    view: "gm", theme: "parchment",
+    world: null, objects: [], selected: null, tool: "",
+    waypoints: [], party: { speed: "foot", march: false, season: "summer", weather: "clear" },
+    day: 63, journal: [], revealed: null, fogV: 0, zoom: 1, hover: null, drag: null
+  };
+  setCanvas = el => { this._cv = el; this._key = null; this.paint(); };
+  setSvg = el => { this._svg = el; };
+  corners = CORNERS;
+
+  componentDidMount() {
+    const patch = {};
+    if (this.props.mapTheme) patch.theme = this.props.mapTheme;
+    if (this.props.startMode) patch.mode = this.props.startMode;
+    if (Object.keys(patch).length) this.setState(patch);
+    this.build();
+    window.addEventListener("mouseup", this.endDrag);
+  }
+  componentWillUnmount() { window.removeEventListener("mouseup", this.endDrag); }
+  componentDidUpdate() { this.paint(); }
+  endDrag = () => { if (this.state.drag) this.setState({ drag: null }); };
+
+  // ---------- geometry ----------
+  nbrs(c, r) {
+    const odd = r & 1;
+    return odd
+      ? [[c + 1, r - 1], [c + 1, r], [c + 1, r + 1], [c, r + 1], [c - 1, r], [c, r - 1]]
+      : [[c, r - 1], [c + 1, r], [c, r + 1], [c - 1, r + 1], [c - 1, r], [c - 1, r - 1]];
+  }
+  center(i, w) { const c = i % w, r = (i - c) / w; return [S * SQ3 * (c + 0.5 * (r & 1)) + S, S * 1.5 * r + S]; }
+  hexPoints(i, w) {
+    const [x, y] = this.center(i, w);
+    return this.corners.map(p => (x + p[0]).toFixed(1) + "," + (y + p[1]).toFixed(1)).join(" ");
+  }
+  hexAt(mx, my, world) {
+    const r0 = Math.round((my - S) / (S * 1.5));
+    let best = null, bd = 1e9;
+    for (let r = r0 - 1; r <= r0 + 1; r++) {
+      if (r < 0 || r >= world.h) continue;
+      const c0 = Math.round((mx - S - S * SQ3 * 0.5 * (r & 1)) / (S * SQ3));
+      for (let c = c0 - 1; c <= c0 + 1; c++) {
+        if (c < 0 || c >= world.w) continue;
+        const i = r * world.w + c, [x, y] = this.center(i, world.w);
+        const d = (x - mx) * (x - mx) + (y - my) * (y - my);
+        if (d < bd) { bd = d; best = i; }
+      }
+    }
+    return best;
+  }
+
+  // ---------- generation ----------
+  build = (keepManual) => {
+    const p = this.state.params;
+    const [w, h] = SIZES[p.size];
+    const seed = hashStr(p.seed) >>> 0;
+    const rng = mulberry(seed);
+    const n = w * h;
+    const el = new Float32Array(n), mo = new Float32Array(n), tp = new Float32Array(n);
+    const sea = p.sea / 100, climate = p.climate / 100, wet = p.wet / 100, mtn = p.mountains / 100;
+    const fx = 5.5 / w, fy = 5.5 / w;
+
+    for (let i = 0; i < n; i++) {
+      const c = i % w, r = (i - c) / w;
+      const nx = (c + 0.5 * (r & 1)) * fx, ny = r * 0.87 * fy;
+      let e = fbm(nx, ny, seed, 6, 0.52);
+      const dx = (c / (w - 1) - 0.5) * 2, dy = (r / (h - 1) - 0.5) * 2.05;
+      const d = Math.sqrt(dx * dx * 0.95 + dy * dy);
+      e = p.edge === "open" ? e * 1.14 - 0.06 : e * 1.12 - Math.pow(Math.max(0, d), 2.5) * 0.62;
+      e += (fbm(nx * 2.6 + 40, ny * 2.6 + 40, seed + 11, 3, 0.5) - 0.5) * 0.16;
+      el[i] = Math.max(0, Math.min(1, e));
+      mo[i] = Math.min(1, Math.max(0, fbm(nx * 1.5 + 90, ny * 1.5 + 90, seed + 3301, 4, 0.55) * 0.85 + (wet - 0.5) * 0.7 + 0.12));
+      const lat = Math.abs(r / (h - 1) - 0.5) * 2;
+      tp[i] = Math.max(0, Math.min(1, (1 - Math.pow(lat, 1.35)) * 0.95 + (climate - 0.5) * 0.55));
+    }
+
+    const biome = new Array(n), land = new Uint8Array(n);
+    for (let i = 0; i < n; i++) land[i] = el[i] >= sea ? 1 : 0;
+    const mtnT = 0.86 - mtn * 0.34, hillT = 0.60 - mtn * 0.20;
+
+    for (let i = 0; i < n; i++) {
+      if (!land[i]) {
+        const dep = (sea - el[i]) / Math.max(0.001, sea);
+        biome[i] = dep > 0.55 ? "deep" : dep > 0.2 ? "ocean" : "shallow";
+        continue;
+      }
+      const hh = (el[i] - sea) / Math.max(0.001, 1 - sea);
+      const t = tp[i] - hh * 0.35, m = mo[i];
+      if (hh > mtnT) biome[i] = t < 0.3 ? "snow" : "mountains";
+      else if (hh > hillT) biome[i] = t < 0.16 ? "snow" : "hills";
+      else if (t < 0.2) biome[i] = m > 0.5 ? "taiga" : "tundra";
+      else if (t < 0.46) biome[i] = m > 0.62 ? "taiga" : m > 0.3 ? "forest" : "grass";
+      else if (t < 0.74) biome[i] = (hh < 0.16 && m > 0.74) ? "swamp" : m > 0.52 ? "forest" : m > 0.28 ? "grass" : "savanna";
+      else biome[i] = m > 0.68 ? "jungle" : m > 0.44 ? "savanna" : m > 0.24 ? "grass" : "desert";
+    }
+    const painted = keepManual ? this.state.paint : {};
+    for (const k in painted) {
+      const i = +k;
+      if (i < 0 || i >= n) continue;
+      biome[i] = painted[k];
+      land[i] = BIOMES[painted[k]].water ? 0 : 1;
+    }
+
+    // strand
+    for (let i = 0; i < n; i++) {
+      if (!land[i] || biome[i] === "mountains" || biome[i] === "snow" || biome[i] === "hills") continue;
+      const hh = (el[i] - sea) / Math.max(0.001, 1 - sea);
+      if (hh > 0.1) continue;
+      const c = i % w, r = (i - c) / w;
+      for (const [nc, nr] of this.nbrs(c, r)) {
+        if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+        if (!land[nr * w + nc]) { biome[i] = "beach"; break; }
+      }
+    }
+
+    // rivers
+    const flow = new Float32Array(n), next = new Int32Array(n).fill(-1);
+    const srcCount = Math.floor(14 + (p.rivers / 100) * 110);
+    const highs = [];
+    for (let i = 0; i < n; i++) if (land[i] && (el[i] - sea) / (1 - sea) > 0.42) highs.push(i);
+    for (let k = 0; k < srcCount && highs.length; k++) {
+      let cur = highs[Math.floor(rng() * highs.length)];
+      for (let step = 0; step < 400; step++) {
+        flow[cur] += 1;
+        if (!land[cur]) break;
+        const c = cur % w, r = (cur - c) / w;
+        let bi = -1, be = el[cur];
+        for (const [nc, nr] of this.nbrs(c, r)) {
+          if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+          const j = nr * w + nc;
+          if (el[j] < be) { be = el[j]; bi = j; }
+        }
+        if (bi < 0) break;
+        next[cur] = bi; cur = bi;
+      }
+    }
+    const river = new Uint8Array(n);
+    for (let i = 0; i < n; i++) if (land[i] && flow[i] >= 3) river[i] = 1;
+
+    // settlements
+    const target = Math.floor(6 + (p.settlements / 100) * 46);
+    const cand = [];
+    for (let i = 0; i < n; i++) {
+      if (!land[i]) continue;
+      const b = biome[i];
+      if (b === "mountains" || b === "snow") continue;
+      const c = i % w, r = (i - c) / w;
+      let coastal = false;
+      for (const [nc, nr] of this.nbrs(c, r)) {
+        if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+        if (!land[nr * w + nc]) { coastal = true; break; }
+      }
+      const hh = (el[i] - sea) / (1 - sea);
+      let sc = 1 - Math.abs(hh - 0.2) * 1.4;
+      if (coastal) sc += 1.5;
+      if (river[i]) sc += 1.7;
+      if (b === "grass" || b === "savanna" || b === "forest") sc += 0.6;
+      if (b === "desert" || b === "swamp" || b === "jungle" || b === "tundra") sc -= 0.8;
+      sc += rng() * 0.9;
+      cand.push([sc, i, coastal]);
+    }
+    cand.sort((a, b) => b[0] - a[0]);
+    let landTotal = 0;
+    for (let i = 0; i < n; i++) if (land[i]) landTotal++;
+    const chosen = [], minGap = Math.max(2, Math.sqrt(landTotal / Math.max(4, target)) * 0.72);
+    for (const [, i] of cand) {
+      if (chosen.length >= target) break;
+      const c = i % w, r = (i - c) / w;
+      let ok = true;
+      for (const j of chosen) {
+        const jc = j % w, jr = (j - jc) / w;
+        const ax = (c + 0.5 * (r & 1)), ay = r * 0.87, bx = (jc + 0.5 * (jr & 1)), by = jr * 0.87;
+        if (Math.hypot(ax - bx, ay - by) < minGap) { ok = false; break; }
+      }
+      if (ok) chosen.push(i);
+    }
+
+    const generated = [];
+    chosen.forEach((i, k) => {
+      const t = k < Math.max(1, Math.round(chosen.length * 0.14)) ? "city" : k < Math.round(chosen.length * 0.45) ? "town" : "village";
+      const pop = t === "city" ? 6000 + Math.floor(rng() * 34000) : t === "town" ? 900 + Math.floor(rng() * 4200) : 60 + Math.floor(rng() * 640);
+      generated.push({ id: "g" + k, gen: true, type: t, name: placeName(rng), hex: i, pop, notes: "" });
+    });
+
+    // realms
+    const wantFactions = Math.max(2, Math.round(2 + (p.settlements / 100) * 5));
+    const realmPalette = ["#a35a34", "#4b6d7a", "#6a6a3c", "#7a4a63", "#3f6b56", "#8a6a3a", "#5b5b8a"];
+    const realms = [];
+    const owner = new Int16Array(n).fill(-1);
+    const heap = new Heap();
+    const seats = generated.filter(o => o.type === "city").concat(generated.filter(o => o.type === "town"));
+    const spread = [];
+    for (const cand2 of seats) {
+      if (spread.length >= wantFactions) break;
+      const cc = cand2.hex % w, cr = (cand2.hex - cc) / w;
+      let ok = true;
+      for (const other of spread) {
+        const oc = other.hex % w, or = (other.hex - oc) / w;
+        if (Math.hypot((cc + 0.5 * (cr & 1)) - (oc + 0.5 * (or & 1)), (cr - or) * 0.87) < minGap * 2.2) { ok = false; break; }
+      }
+      if (ok) spread.push(cand2);
+    }
+    for (const extra of seats) { if (spread.length >= Math.min(3, seats.length)) break; if (spread.indexOf(extra) < 0) spread.push(extra); }
+    const cities = spread;
+    for (let k = 0; k < cities.length; k++) {
+      const cap0 = cities[k];
+      realms.push({ id: k, name: cap(pick(rng, SYL_A)) + " " + pick(rng, REALM_B), color: realmPalette[k % realmPalette.length], seat: cap0.name, hexes: 0 });
+      owner[cap0.hex] = k; heap.push([0, cap0.hex, k]);
+    }
+    while (heap.size) {
+      const [d, i, k] = heap.pop();
+      if (owner[i] !== k && owner[i] !== -1) continue;
+      const c = i % w, r = (i - c) / w;
+      for (const [nc, nr] of this.nbrs(c, r)) {
+        if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+        const j = nr * w + nc;
+        if (!land[j] || owner[j] !== -1) continue;
+        const cost = (BIOMES[biome[j]].cost || 4) + 0.2;
+        const nd = d + cost;
+        if (nd > 46) continue;
+        owner[j] = k; heap.push([nd, j, k]);
+      }
+    }
+    for (let i = 0; i < n; i++) if (owner[i] >= 0 && realms[owner[i]]) realms[owner[i]].hexes++;
+    const keptNames = keepManual ? this.state.realmNames : {};
+    for (const k in keptNames) if (realms[k]) realms[k].name = keptNames[k];
+
+    // wild sites
+    const poiCount = Math.floor(3 + (p.pois / 100) * 30);
+    const siteTypes = ["ruin", "dungeon", "camp", "keep"];
+    for (let k = 0; k < poiCount; k++) {
+      let tries = 0, i = -1;
+      while (tries++ < 200) {
+        const t = Math.floor(rng() * n);
+        if (!land[t]) continue;
+        let near = false;
+        const c = t % w, r = (t - c) / w;
+        for (const o of generated) { const oc = o.hex % w, or = (o.hex - oc) / w; if (Math.abs(oc - c) + Math.abs(or - r) < 3) { near = true; break; } }
+        if (near) continue;
+        i = t; break;
+      }
+      if (i < 0) continue;
+      const t = siteTypes[Math.floor(rng() * siteTypes.length)];
+      generated.push({ id: "s" + k, gen: true, type: t, name: t === "keep" ? placeName(rng) + " Keep" : siteName(rng), hex: i, pop: t === "keep" ? 40 + Math.floor(rng() * 300) : 0, notes: "" });
+    }
+
+    const world = { w, h, n, el, mo, tp, biome, land, river, flow, next, owner, realms, sea, edge: p.edge, seedName: p.seed, hexMiles: p.hexMiles, px: [S * SQ3 * (w + 0.5) + S, S * 1.5 * h + S * 0.5] };
+    const manual = keepManual ? this.state.objects.filter(o => !o.gen && o.hex < n) : [];
+    const objects = generated.concat(manual);
+    const revealed = new Set();
+    this.setState({ world, objects, selected: null, waypoints: [], revealed, paint: painted, fogV: this.state.fogV + 1 }, () => {
+      this.paint();
+      this.fit(world, land);
+    });
+  };
+
+  setStage = el => { this._stage = el; };
+
+  fit = (world, land) => {
+    const el = this._stage;
+    if (!el) return;
+    const [pw, ph] = world.px;
+    const avail = [Math.max(120, el.clientWidth - 36), Math.max(120, el.clientHeight - 36)];
+    const z = Math.max(0.35, Math.min(1.4, +Math.min(avail[0] / pw, avail[1] / ph).toFixed(2)));
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, any = false;
+    for (let i = 0; i < world.n; i++) {
+      if (!land[i]) continue;
+      any = true;
+      const [x, y] = this.center(i, world.w);
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (!any) { minX = 0; maxX = pw; minY = 0; maxY = ph; }
+    this.setState({ zoom: z }, () => {
+      const cx = ((minX + maxX) / 2) * z + 18, cy = ((minY + maxY) / 2) * z + 18;
+      el.scrollLeft = Math.max(0, cx - el.clientWidth / 2);
+      el.scrollTop = Math.max(0, cy - el.clientHeight / 2);
+    });
+  };
+
+  // ---------- routing ----------
+  cellCost(world, i) {
+    const b = BIOMES[world.biome[i]];
+    const ship = this.state.party.speed === "ship";
+    if (b.water) return ship ? 1 : null;
+    if (ship) return null;
+    let c = b.cost;
+    if (world.river[i]) c += 0.4;
+    return c;
+  }
+  path(world, a, b) {
+    if (a === b) return [a];
+    const { w, h, n } = world;
+    const dist = new Float32Array(n).fill(Infinity), prev = new Int32Array(n).fill(-1);
+    const heap = new Heap(); dist[a] = 0; heap.push([0, a]);
+    const [bx, by] = this.center(b, w);
+    while (heap.size) {
+      const [f, i] = heap.pop();
+      if (i === b) break;
+      const c = i % w, r = (i - c) / w;
+      for (const [nc, nr] of this.nbrs(c, r)) {
+        if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+        const j = nr * w + nc;
+        const cost = this.cellCost(world, j);
+        if (cost === null) continue;
+        const nd = dist[i] + cost;
+        if (nd < dist[j]) {
+          dist[j] = nd; prev[j] = i;
+          const [jx, jy] = this.center(j, w);
+          heap.push([nd + Math.hypot(jx - bx, jy - by) / (S * SQ3), j]);
+        }
+      }
+    }
+    if (dist[b] === Infinity) return null;
+    const out = []; let cur = b;
+    while (cur !== -1) { out.push(cur); cur = prev[cur]; }
+    return out.reverse();
+  }
+  line(world, a, b) {
+    const w = world.w;
+    const [ac, ar] = [a % w, (a - (a % w)) / w], [bc, br] = [b % w, (b - (b % w)) / w];
+    const A = toCube(ac, ar), B = toCube(bc, br);
+    const n = Math.max(Math.abs(A[0] - B[0]), Math.abs(A[1] - B[1]), Math.abs(A[2] - B[2]));
+    const out = [];
+    for (let k = 0; k <= n; k++) {
+      const t = n === 0 ? 0 : k / n;
+      const [rx, , rz] = cubeRound(A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t);
+      const [c, r] = fromCube(rx, rz);
+      if (c < 0 || r < 0 || c >= world.w || r >= world.h) continue;
+      const i = r * world.w + c;
+      if (out[out.length - 1] !== i) out.push(i);
+    }
+    return out.length ? out : null;
+  }
+  route() {
+    const { world, waypoints } = this.state;
+    if (!world || waypoints.length < 2) return null;
+    const cells = [];
+    for (let k = 0; k < waypoints.length - 1; k++) {
+      const seg = this.state.routeMode === "auto"
+        ? this.path(world, waypoints[k], waypoints[k + 1])
+        : this.line(world, waypoints[k], waypoints[k + 1]);
+      if (!seg) return { cells: null, blocked: true };
+      for (let j = k === 0 ? 0 : 1; j < seg.length; j++) cells.push(seg[j]);
+    }
+    let cost = 0, wildSum = 0;
+    const counts = {};
+    for (let k = 1; k < cells.length; k++) {
+      const i = cells[k], b = world.biome[i];
+      const cc = this.cellCost(world, i);
+      cost += (cc === null ? 4 : cc) * world.hexMiles;
+      wildSum += BIOMES[b].wild;
+      counts[b] = (counts[b] || 0) + 1;
+    }
+    const pm = (cells.length - 1) * world.hexMiles;
+    const [ax, ay] = this.center(cells[0], world.w), [bx2, by2] = this.center(cells[cells.length - 1], world.w);
+    const crow = (Math.hypot(bx2 - ax, by2 - ay) / (S * SQ3)) * world.hexMiles;
+    return { cells, cost, pathMiles: pm, crow, counts, wild: cells.length > 1 ? wildSum / (cells.length - 1) : 0 };
+  }
+  pace() {
+    const pt = this.state.party;
+    return PACE[pt.speed] * SEASON_MOD[pt.season] * WEATHER_MOD[pt.weather] * (pt.march ? 1.25 : 1);
+  }
+  dateStr(day) {
+    const d = ((day % 360) + 360) % 360, m = Math.floor(d / 30), dd = (d % 30) + 1;
+    const yr = 1492 + Math.floor(day / 360);
+    return dd + " " + MONTHS[m] + ", " + yr + " DR";
+  }
+
+  // ---------- painting ----------
+  paint() {
+    const cv = this._cv, world = this.state.world;
+    if (!cv || !world) return;
+    const s0 = this.state;
+    const key = [s0.theme, s0.view, s0.fogV, s0.paintV, world.edge, world.seedName, world.n, world.hexMiles,
+      s0.layers.grid, s0.layers.rivers, s0.layers.roads, s0.layers.borders,
+      s0.objects.map(o => o.type + o.hex).join(",")].join("|");
+    if (key === this._key) return;
+    this._key = key;
+    const T = THEMES[this.state.theme] || THEMES.parchment;
+    const [pw, ph] = world.px, dpr = 2;
+    if (cv.width !== pw * dpr) { cv.width = pw * dpr; cv.height = ph * dpr; }
+    const g = cv.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, pw, ph);
+    g.fillStyle = T.paper; g.fillRect(0, 0, pw, ph);
+
+    const { w, h, n } = world, groups = {};
+    for (let i = 0; i < n; i++) { const b = world.biome[i]; (groups[b] || (groups[b] = [])).push(i); }
+    for (const b in groups) {
+      g.fillStyle = T[b] || T.grass;
+      g.beginPath();
+      for (const i of groups[b]) {
+        const [x, y] = this.center(i, w);
+        g.moveTo(x + this.corners[0][0], y + this.corners[0][1]);
+        for (let k = 1; k < 6; k++) g.lineTo(x + this.corners[k][0], y + this.corners[k][1]);
+        g.closePath();
+      }
+      g.fill();
+    }
+
+    if (this.state.layers.grid) {
+      g.strokeStyle = T.grid; g.lineWidth = 0.4; g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const [x, y] = this.center(i, w);
+        g.moveTo(x + this.corners[0][0], y + this.corners[0][1]);
+        for (let k = 1; k < 6; k++) g.lineTo(x + this.corners[k][0], y + this.corners[k][1]);
+        g.closePath();
+      }
+      g.stroke();
+    }
+
+    // coastline
+    const openEdge = world.edge === "open";
+    g.strokeStyle = T.coast; g.lineWidth = 1.05; g.beginPath();
+    for (let i = 0; i < n; i++) {
+      if (!world.land[i]) continue;
+      const c = i % w, r = (i - c) / w, [x, y] = this.center(i, w);
+      const nb = this.nbrs(c, r);
+      for (let k = 0; k < 6; k++) {
+        const [nc, nr] = nb[k];
+        const out = nc < 0 || nr < 0 || nc >= w || nr >= h;
+        if (out && openEdge) continue;
+        if (out || !world.land[nr * w + nc]) {
+          const a = this.corners[k], b2 = this.corners[(k + 1) % 6];
+          g.moveTo(x + a[0], y + a[1]); g.lineTo(x + b2[0], y + b2[1]);
+        }
+      }
+    }
+    g.stroke();
+
+    if (this.state.layers.borders) {
+      g.strokeStyle = T.border; g.lineWidth = 1.6; g.setLineDash([3.2, 2.4]); g.beginPath();
+      for (let i = 0; i < n; i++) {
+        const o = world.owner[i];
+        if (o < 0) continue;
+        const c = i % w, r = (i - c) / w, [x, y] = this.center(i, w);
+        const nb = this.nbrs(c, r);
+        for (let k = 0; k < 6; k++) {
+          const [nc, nr] = nb[k];
+          const out = nc < 0 || nr < 0 || nc >= w || nr >= h;
+          const oo = out ? -1 : world.owner[nr * w + nc];
+          if (oo !== o && !(out || !world.land[nr * w + nc])) {
+            const a = this.corners[k], b2 = this.corners[(k + 1) % 6];
+            g.moveTo(x + a[0], y + a[1]); g.lineTo(x + b2[0], y + b2[1]);
+          }
+        }
+      }
+      g.stroke(); g.setLineDash([]);
+    }
+
+    if (this.state.layers.rivers) {
+      g.strokeStyle = T.river; g.lineCap = "round";
+      for (let i = 0; i < n; i++) {
+        if (!world.river[i]) continue;
+        const j = world.next[i];
+        if (j < 0) continue;
+        const [x1, y1] = this.center(i, w), [x2, y2] = this.center(j, w);
+        g.lineWidth = Math.min(3.4, 0.7 + Math.sqrt(world.flow[i]) * 0.42);
+        g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+      }
+    }
+
+    if (this.state.layers.roads) {
+      const settle = this.state.objects.filter(o => o.type === "city" || o.type === "town" || o.type === "village" || o.type === "keep");
+      const seen = new Set();
+      g.strokeStyle = T.road; g.lineCap = "round"; g.lineWidth = 1.5; g.setLineDash([]);
+      const savedSpeed = this.state.party.speed;
+      for (const a of settle) {
+        const near = settle.filter(b => b !== a).map(b => {
+          const ac = a.hex % w, ar = (a.hex - ac) / w, bc = b.hex % w, br = (b.hex - bc) / w;
+          return [Math.hypot((ac + 0.5 * (ar & 1)) - (bc + 0.5 * (br & 1)), (ar - br) * 0.87), b];
+        }).sort((x, y) => x[0] - y[0]).slice(0, 2);
+        for (const [d, b] of near) {
+          if (d > 18) continue;
+          const key = a.hex < b.hex ? a.hex + ":" + b.hex : b.hex + ":" + a.hex;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          this.state.party.speed = "foot";
+          const seg = this.path(world, a.hex, b.hex);
+          this.state.party.speed = savedSpeed;
+          if (!seg || seg.length > 46) continue;
+          g.beginPath();
+          seg.forEach((i, k) => { const [x, y] = this.center(i, w); k ? g.lineTo(x, y) : g.moveTo(x, y); });
+          g.stroke();
+        }
+      }
+    }
+
+    if (openEdge) {
+      for (let ring = 0; ring < 3; ring++) {
+        g.fillStyle = T.fog;
+        g.globalAlpha = [0.72, 0.4, 0.18][ring];
+        g.beginPath();
+        for (let i = 0; i < n; i++) {
+          const c = i % w, r = (i - c) / w;
+          const d = Math.min(c, r, w - 1 - c, h - 1 - r);
+          if (d !== ring) continue;
+          const [x, y] = this.center(i, w);
+          g.moveTo(x + this.corners[0][0], y + this.corners[0][1]);
+          for (let k = 1; k < 6; k++) g.lineTo(x + this.corners[k][0], y + this.corners[k][1]);
+          g.closePath();
+        }
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      g.fillStyle = T.label;
+      g.font = "italic 15px 'Cormorant Garamond', serif";
+      g.textAlign = "center";
+      g.globalAlpha = 0.5;
+      g.fillText("unsurveyed", pw / 2, 22);
+      g.fillText("unsurveyed", pw / 2, ph - 12);
+      g.globalAlpha = 1;
+    }
+
+    if (this.state.view === "players" && this.state.revealed) {
+      const rev = this.state.revealed;
+      g.fillStyle = T.fog; g.beginPath();
+      for (let i = 0; i < n; i++) {
+        if (rev.has(i)) continue;
+        const [x, y] = this.center(i, w);
+        g.moveTo(x + this.corners[0][0], y + this.corners[0][1]);
+        for (let k = 1; k < 6; k++) g.lineTo(x + this.corners[k][0], y + this.corners[k][1]);
+        g.closePath();
+      }
+      g.fill();
+    }
+  }
+
+  // ---------- handlers ----------
+  setParam(k, v) { this.setState(s => ({ params: Object.assign({}, s.params, { [k]: v }) })); }
+
+  onRange = e => this.setParam(e.target.name, Number(e.target.value));
+  onNumber = e => {
+    const v = Math.max(1, Math.min(60, Number(e.target.value) || 1));
+    this.setState(s => {
+      const params = Object.assign({}, s.params, { hexMiles: v });
+      const world = s.world ? Object.assign({}, s.world, { hexMiles: v }) : null;
+      return { params, world };
+    });
+  };
+  onText = e => this.setParam(e.target.name, e.target.value);
+  onEdge = e => {
+    const v = e.target.value;
+    this.setState(s => ({ params: Object.assign({}, s.params, { edge: v }) }), () => this.build(true));
+  };
+  toManual = () => this.setState({ routeMode: "manual" });
+  toAuto = () => this.setState({ routeMode: "auto" });
+  brushHex = i => {
+    const b = this.state.tool.slice(2), world = this.state.world;
+    if (!world || !BIOMES[b] || world.biome[i] === b) return;
+    world.biome[i] = b;
+    world.land[i] = BIOMES[b].water ? 0 : 1;
+    if (BIOMES[b].water) world.river[i] = 0;
+    this.setState(s => ({ paint: Object.assign({}, s.paint, { [i]: b }), paintV: s.paintV + 1 }));
+  };
+  onRealmName = (k, v) => {
+    const world = this.state.world;
+    if (!world || !world.realms[k]) return;
+    world.realms[k].name = v;
+    this.setState(s => ({ realmNames: Object.assign({}, s.realmNames, { [k]: v }) }));
+  };
+  reroll = () => {
+    const rng = mulberry((Math.random() * 1e9) | 0);
+    this.setParam("seed", placeName(rng));
+  };
+  regenerate = () => this.build(true);
+
+  toForge = () => this.setState({ mode: "forge" });
+  toTable = () => this.setState({ mode: "table", tool: "" });
+  toGm = () => this.setState({ view: "gm" });
+  toPlayers = () => this.setState({ view: "players" });
+  zoomIn = () => this.setState(s => ({ zoom: Math.min(2.4, +(s.zoom + 0.2).toFixed(2)) }));
+  zoomOut = () => this.setState(s => ({ zoom: Math.max(0.5, +(s.zoom - 0.2).toFixed(2)) }));
+  toggleLayer = e => { const k = e.currentTarget.name; this.setState(s => ({ layers: Object.assign({}, s.layers, { [k]: !s.layers[k] }) })); };
+  pickTool = e => this.setState({ tool: e.currentTarget.name });
+  onParty = e => { const k = e.target.name, v = e.target.value; this.setState(s => ({ party: Object.assign({}, s.party, { [k]: v }) })); };
+  toggleMarch = () => this.setState(s => ({ party: Object.assign({}, s.party, { march: !s.party.march }) }));
+  clearRoute = () => this.setState({ waypoints: [] });
+  popWaypoint = () => this.setState(s => ({ waypoints: s.waypoints.slice(0, -1) }));
+  revealAll = () => { const w = this.state.world; if (!w) return; const r = new Set(); for (let i = 0; i < w.n; i++) r.add(i); this.setState({ revealed: r, fogV: this.state.fogV + 1 }); };
+  hideAll = () => this.setState({ revealed: new Set(), fogV: this.state.fogV + 1 });
+
+  svgPoint(e) {
+    const svg = this._svg, world = this.state.world;
+    if (!svg || !world) return null;
+    const b = svg.getBoundingClientRect();
+    return [(e.clientX - b.left) / this.state.zoom, (e.clientY - b.top) / this.state.zoom];
+  }
+  onMapMove = e => {
+    const pt = this.svgPoint(e);
+    if (!pt) return;
+    const i = this.hexAt(pt[0], pt[1], this.state.world);
+    const drag = this.state.drag;
+    if (drag && i !== null) {
+      if (drag.kind === "wp") {
+        this.setState(s => { const wp = s.waypoints.slice(); wp[drag.n] = i; return { waypoints: wp, hover: i }; });
+        return;
+      }
+      if (drag.kind === "brush") { this.brushHex(i); if (i !== s.hover) this.setState({ hover: i }); return; }
+      if (drag.kind === "obj") {
+        this.setState(s => ({ objects: s.objects.map(o => o.id === drag.id ? Object.assign({}, o, { hex: i }) : o), hover: i }));
+        return;
+      }
+    }
+    if (i !== this.state.hover) this.setState({ hover: i });
+  };
+  onMapDown = e => {
+    if (this.state.mode !== "forge" || !this.state.tool.startsWith("t:")) return;
+    const pt = this.svgPoint(e);
+    if (!pt) return;
+    const i = this.hexAt(pt[0], pt[1], this.state.world);
+    if (i === null) return;
+    this.setState({ drag: { kind: "brush" } });
+    this.brushHex(i);
+  };
+  onMapLeave = () => this.setState({ hover: null, drag: null });
+  onMapUp = () => { if (this.state.drag) this.setState({ drag: null }); };
+  onMapClick = e => {
+    const pt = this.svgPoint(e);
+    if (!pt) return;
+    const world = this.state.world;
+    const i = this.hexAt(pt[0], pt[1], world);
+    if (i === null) return;
+    if (this.state.mode === "table") { this.setState(s => ({ waypoints: s.waypoints.concat([i]) })); return; }
+    const tool = this.state.tool;
+    if (tool.startsWith("t:")) { this.brushHex(i); return; }
+    if (tool) {
+      const rng = mulberry(hashStr(world.seedName + i + tool));
+      const isSite = tool === "ruin" || tool === "dungeon" || tool === "camp";
+      const obj = {
+        id: "m" + Date.now().toString(36),
+        gen: false, type: tool,
+        name: isSite ? siteName(rng) : tool === "keep" ? placeName(rng) + " Keep" : placeName(rng),
+        hex: i,
+        pop: tool === "city" ? 12000 : tool === "town" ? 2200 : tool === "village" ? 320 : tool === "keep" ? 120 : 0,
+        notes: ""
+      };
+      this.setState(s => ({ objects: s.objects.concat([obj]), selected: { kind: "object", id: obj.id } }));
+      return;
+    }
+    this.setState({ selected: { kind: "hex", i } });
+  };
+  deleteSel = () => {
+    const sel = this.state.selected;
+    if (!sel || sel.kind !== "object") return;
+    this.setState(s => ({ objects: s.objects.filter(o => o.id !== sel.id), selected: null }));
+  };
+  patchSel = patch => {
+    const sel = this.state.selected;
+    if (!sel || sel.kind !== "object") return;
+    this.setState(s => ({ objects: s.objects.map(o => o.id === sel.id ? Object.assign({}, o, patch) : o) }));
+  };
+  onSelName = e => this.patchSel({ name: e.target.value });
+  onSelType = e => this.patchSel({ type: e.target.value });
+  onSelPop = e => this.patchSel({ pop: Math.max(0, Number(e.target.value) || 0) });
+  onSelNotes = e => this.patchSel({ notes: e.target.value });
+
+  march = () => {
+    const r = this.route(), world = this.state.world;
+    if (!r || !r.cells) return;
+    const days = r.cost / this.pace();
+    const whole = Math.max(1, Math.ceil(days));
+    const rng = mulberry(hashStr(this.state.day + ":" + r.cells.length + ":" + world.seedName));
+    const checks = whole * 2;
+    let hits = 0;
+    for (let k = 0; k < checks; k++) if (rng() < r.wild * 0.42) hits++;
+    const rev = new Set(this.state.revealed || []);
+    for (const i of r.cells) {
+      rev.add(i);
+      const c = i % world.w, rr = (i - c) / world.w;
+      for (const [nc, nr] of this.nbrs(c, rr)) if (nc >= 0 && nr >= 0 && nc < world.w && nr < world.h) rev.add(nr * world.w + nc);
+    }
+    const from = world.biome[r.cells[0]], to = world.biome[r.cells[r.cells.length - 1]];
+    const nameAt = i => { const o = this.state.objects.find(x => x.hex === i); return o ? o.name : BIOMES[world.biome[i]].name.toLowerCase(); };
+    const entry = {
+      when: this.dateStr(this.state.day) + " \u2192 " + this.dateStr(this.state.day + whole),
+      text: "Marched from " + nameAt(r.cells[0]) + " to " + nameAt(r.cells[r.cells.length - 1]) + " \u2014 " + (r.cells.length - 1) + " hexes, " + Math.round(r.pathMiles) + " mi.",
+      note: hits ? hits + " encounter" + (hits > 1 ? "s" : "") + " on the road." + (this.state.party.march ? " Party arrives exhausted." : "") : "The road was quiet." + (this.state.party.march ? " Party arrives exhausted." : ""),
+      tone: hits ? "#b06a4a" : "#5f8a72"
+    };
+    this.setState(s => ({
+      day: s.day + whole, revealed: rev, fogV: s.fogV + 1,
+      journal: [entry].concat(s.journal).slice(0, 24),
+      waypoints: [r.cells[r.cells.length - 1]]
+    }));
+  };
+
+  // ---------- render values ----------
+  renderVals() {
+    const s = this.state, p = s.params, world = s.world;
+    const T = THEMES[s.theme] || THEMES.parchment;
+    const accent = this.props.accent || "#c05a2b";
+    const isForge = s.mode === "forge", isTable = s.mode === "table";
+
+    const tab = on => "padding: 6px 15px; border: none; border-radius: 2px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; background: " + (on ? "#3a3025" : "transparent") + "; color: " + (on ? "#f0e7d6" : "#8a7f6c") + ";";
+    const chip = on => "padding: 5px 9px; border-radius: 3px; cursor: pointer; font-size: 10px; border: 1px solid " + (on ? "#5c4a33" : "#2f281f") + "; background: " + (on ? "#2f2720" : "transparent") + "; color: " + (on ? "#e6ddcd" : "#7d7361") + ";";
+    const toolBtn = on => "padding: 8px 6px; border-radius: 3px; cursor: pointer; font-size: 11px; border: 1px solid " + (on ? "#8a4a24" : "#3a3025") + "; background: " + (on ? "#3a2016" : "#241f19") + "; color: " + (on ? "#f0c9a8" : "#cfc4b0") + ";";
+
+    const vals = {
+      isForge, isTable, accentColor: accent, routeShadow: "#16120e",
+      canvasRef: this.setCanvas, svgRef: this.setSvg, stageRef: this.setStage,
+      forgeTabStyle: tab(isForge), tableTabStyle: tab(isTable),
+      gmTabStyle: tab(s.view === "gm"), playersTabStyle: tab(s.view === "players"),
+      zoomLabel: Math.round(s.zoom * 100) + "%",
+      pSeed: p.seed, pSize: p.size, pHexMiles: p.hexMiles,
+      pSea: p.sea, pClimate: p.climate, pWet: p.wet, pMountains: p.mountains, pRivers: p.rivers, pSettlements: p.settlements, pPois: p.pois,
+      vSea: p.sea + "%", vClimate: p.climate < 30 ? "frigid" : p.climate < 46 ? "cool" : p.climate < 62 ? "temperate" : p.climate < 80 ? "warm" : "torrid",
+      vWet: p.wet < 30 ? "arid" : p.wet < 55 ? "moderate" : p.wet < 78 ? "lush" : "drenched",
+      vMtn: p.mountains < 30 ? "worn" : p.mountains < 60 ? "rolling" : "jagged",
+      vRivers: p.rivers < 30 ? "sparse" : p.rivers < 65 ? "many" : "braided",
+      vSettle: p.settlements < 25 ? "wilderness" : p.settlements < 55 ? "frontier" : "settled",
+      vPois: p.pois < 25 ? "few" : p.pois < 60 ? "scattered" : "haunted",
+      onRange: this.onRange, onNumber: this.onNumber, onText: this.onText, onEdge: this.onEdge, reroll: this.reroll, regenerate: this.regenerate,
+      pEdge: p.edge, onMapDown: this.onMapDown,
+      toManual: this.toManual, toAuto: this.toAuto,
+      manualTabStyle: tab(s.routeMode === "manual"), autoTabStyle: tab(s.routeMode === "auto"),
+      plotHint: s.routeMode === "manual"
+        ? "Click hexes in order and the party walks the straight line between them. Drag any waypoint to redraw a leg."
+        : "Click a start and an end; the cheapest way through the terrain is found for you. Drag a waypoint to force it elsewhere.",
+      brGrassStyle: toolBtn(s.tool === "t:grass"), brForestStyle: toolBtn(s.tool === "t:forest"),
+      brHillsStyle: toolBtn(s.tool === "t:hills"), brMountainsStyle: toolBtn(s.tool === "t:mountains"),
+      brSwampStyle: toolBtn(s.tool === "t:swamp"), brDesertStyle: toolBtn(s.tool === "t:desert"),
+      brSnowStyle: toolBtn(s.tool === "t:snow"), brOceanStyle: toolBtn(s.tool === "t:ocean"),
+      brushHint: s.tool.startsWith("t:")
+        ? "Painting " + BIOMES[s.tool.slice(2)].name.toLowerCase() + ". Click or drag across the map. Reforging keeps what you painted."
+        : "Pick a ground to repaint hexes. Water erases rivers and blocks travel on foot.",
+      toForge: this.toForge, toTable: this.toTable, toGm: this.toGm, toPlayers: this.toPlayers,
+      zoomIn: this.zoomIn, zoomOut: this.zoomOut, toggleLayer: this.toggleLayer, pickTool: this.pickTool,
+      layerGridStyle: chip(s.layers.grid), layerRiversStyle: chip(s.layers.rivers), layerRoadsStyle: chip(s.layers.roads),
+      layerBordersStyle: chip(s.layers.borders), layerLabelsStyle: chip(s.layers.labels),
+      toolCityStyle: toolBtn(s.tool === "city"), toolTownStyle: toolBtn(s.tool === "town"), toolVillageStyle: toolBtn(s.tool === "village"),
+      toolKeepStyle: toolBtn(s.tool === "keep"), toolRuinStyle: toolBtn(s.tool === "ruin"), toolDungeonStyle: toolBtn(s.tool === "dungeon"),
+      toolCampStyle: toolBtn(s.tool === "camp"), toolNoneStyle: toolBtn(!s.tool),
+      routeModeLabel: s.routeMode,
+      toolHint: s.tool && !s.tool.startsWith("t:") ? "Click any hex to raise a " + s.tool + ". Drag an existing one to move it." : "Click a holding to inspect it, or drag it to another hex.",
+      onParty: this.onParty, toggleMarch: this.toggleMarch, clearRoute: this.clearRoute, popWaypoint: this.popWaypoint,
+      revealAll: this.revealAll, hideAll: this.hideAll, march: this.march,
+      onSelName: this.onSelName, onSelType: this.onSelType, onSelPop: this.onSelPop, onSelNotes: this.onSelNotes, deleteSel: this.deleteSel,
+      onMapClick: this.onMapClick, onMapMove: this.onMapMove, onMapLeave: this.onMapLeave, onMapUp: this.onMapUp,
+      pSpeed: s.party.speed, pSeason: s.party.season, pWeather: s.party.weather,
+      marchStyle: "width: 100%; text-align: left; padding: 8px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; line-height: 1.4; border: 1px solid " + (s.party.march ? "#8a4a24" : "#3a3025") + "; background: " + (s.party.march ? "#3a2016" : "#241f19") + "; color: " + (s.party.march ? "#f0c9a8" : "#9a8f7c") + ";",
+      dateLong: this.dateStr(s.day), campaignDayLabel: "Campaign day " + (s.day - 62),
+      journal: s.journal, emptyLog: s.journal.length === 0,
+      marks: [], waypointMarks: [], realms: [], terrainBreak: [], hexFacts: [],
+      routePoints: "", selPoints: "", hoverPoints: "", viewBox: "0 0 100 100",
+      hoverFill: "rgba(255,255,255,0.12)", hoverStroke: T.ink,
+      stageStyle: "position: relative; width: 100px; height: 100px;",
+      canvasStyle: "display: block; width: 100%; height: 100%;",
+      svgStyle: "position: absolute; inset: 0; width: 100%; height: 100%;",
+      scaleBarStyle: "width: 40px; height: 3px; background: #c9bda7;",
+      scaleLabel: "\u2014", hoverLabel: "\u2014",
+      noRoute: true, hasRoute: false, nothingSelected: true, objSelected: false, hexSelected: false,
+      selName: "", selType: "city", selPop: 0, selNotes: "", selHex: "\u2014", selGround: "\u2014", selRealm: "",
+      daysBig: "\u2014", arrivalLabel: "\u2014", hexCount: "0", pathMiles: "\u2014", crowMiles: "\u2014", effPace: "\u2014",
+      checkCount: "0", checkLabel: "", exhaustLabel: "", exhaustStyle: "display: none;", tally: ""
+    };
+    if (!world) return vals;
+
+    const [pw, ph] = world.px, z = s.zoom;
+    vals.viewBox = "0 0 " + pw + " " + ph;
+    vals.stageStyle = "position: relative; width: " + Math.round(pw * z) + "px; height: " + Math.round(ph * z) + "px; margin: 18px;";
+    vals.scaleBarStyle = "width: " + (S * SQ3 * 5 * z).toFixed(0) + "px; height: 3px; background: #c9bda7; border-left: 1px solid #c9bda7; border-right: 1px solid #c9bda7;";
+    vals.scaleLabel = (world.hexMiles * 5) + " mi \u00b7 1 hex = " + world.hexMiles + " mi";
+
+    const label = i => {
+      const c = i % world.w, r = (i - c) / world.w;
+      return String(c + 1).padStart(2, "0") + "." + String(r + 1).padStart(2, "0");
+    };
+    if (s.hover !== null && s.hover < world.n) {
+      vals.hoverPoints = this.hexPoints(s.hover, world.w);
+      const o = s.objects.find(x => x.hex === s.hover);
+      vals.hoverLabel = label(s.hover) + " \u00b7 " + BIOMES[world.biome[s.hover]].name + (o ? " \u00b7 " + o.name : "");
+    }
+
+    const hidden = s.view === "players" && s.revealed;
+    const marks = [];
+    for (const o of s.objects) {
+      if (o.hex >= world.n) continue;
+      if (hidden && !s.revealed.has(o.hex)) continue;
+      const [x, y] = this.center(o.hex, world.w);
+      const isSite = o.type === "ruin" || o.type === "dungeon" || o.type === "camp";
+      const big = o.type === "city", mid = o.type === "town" || o.type === "keep";
+      const r = big ? 5 : mid ? 3.8 : 2.7;
+      const selected = s.selected && s.selected.kind === "object" && s.selected.id === o.id;
+      marks.push({
+        transform: "translate(" + x.toFixed(1) + "," + y.toFixed(1) + ")",
+        isSite, isTown: !isSite, r, rInner: big ? 2 : 1.3, hit: 9,
+        sitePoints: o.type === "dungeon" ? "0,-5 4.4,0 0,5 -4.4,0" : o.type === "camp" ? "0,-4.6 4.2,4 -4.2,4" : "-4,-4 4,-4 4,4 -4,4",
+        fill: selected ? accent : (isSite ? T.site : T.paper),
+        stroke: selected ? accent : T.ink,
+        opacity: 1,
+        labelEl: (s.layers.labels && (big || mid || o.type === "dungeon"))
+          ? React.createElement("text", {
+              x: r + 3, y: 2.6, textAnchor: "start",
+              fontFamily: "Cormorant Garamond, serif", fontSize: big ? 9.4 : 7.8, fontWeight: 600,
+              fill: T.label, stroke: T.halo, strokeWidth: 2.4, paintOrder: "stroke", letterSpacing: 0.4,
+              style: { pointerEvents: "none" }
+            }, o.name)
+          : null,
+        onClick: e => { e.stopPropagation(); if (s.mode === "forge") this.setState({ selected: { kind: "object", id: o.id }, tool: "" }); },
+        onDown: e => { e.stopPropagation(); if (s.mode === "forge") this.setState({ drag: { kind: "obj", id: o.id }, selected: { kind: "object", id: o.id }, tool: "" }); }
+      });
+    }
+    vals.marks = marks;
+
+    if (s.selected && s.selected.kind === "hex") vals.selPoints = this.hexPoints(s.selected.i, world.w);
+    if (s.selected && s.selected.kind === "object") {
+      const o = s.objects.find(x => x.id === s.selected.id);
+      if (o) vals.selPoints = this.hexPoints(o.hex, world.w);
+    }
+
+    const r = isTable ? this.route() : null;
+    if (r && r.cells) {
+      vals.routePoints = r.cells.map(i => { const [x, y] = this.center(i, world.w); return x.toFixed(1) + "," + y.toFixed(1); }).join(" ");
+      const days = r.cost / this.pace();
+      vals.hasRoute = true; vals.noRoute = false;
+      vals.daysBig = days < 1 ? days.toFixed(1) : days < 10 ? days.toFixed(1) : String(Math.round(days));
+      vals.arrivalLabel = this.dateStr(s.day + Math.max(1, Math.ceil(days)));
+      vals.hexCount = String(r.cells.length - 1);
+      vals.pathMiles = Math.round(r.pathMiles) + " mi";
+      vals.crowMiles = Math.round(r.crow) + " mi";
+      vals.effPace = this.pace().toFixed(0) + " mi/day";
+      const total = Math.max(1, r.cells.length - 1);
+      vals.terrainBreak = Object.keys(r.counts).sort((a, b) => r.counts[b] - r.counts[a]).slice(0, 6).map(k => ({
+        color: T[k], name: BIOMES[k].name,
+        detail: r.counts[k] + " hex \u00b7 \u00d7" + (BIOMES[k].cost === null ? "1.0" : BIOMES[k].cost.toFixed(1)) + " \u00b7 " + Math.round(r.counts[k] / total * 100) + "%"
+      }));
+      const checks = Math.max(1, Math.ceil(days)) * 2;
+      vals.checkCount = checks + " \u00d7 2/day";
+      const inSix = Math.max(1, Math.round(r.wild * 0.42 * 6));
+      vals.checkLabel = inSix + "-in-6 on the wildest ground crossed. Roll twice a day, dawn and dusk.";
+      if (s.party.march) {
+        vals.exhaustStyle = "border: 1px solid #4a3428; background: #241610; border-radius: 3px; padding: 9px 11px; font-size: 11px; color: #c98a63; line-height: 1.5;";
+        vals.exhaustLabel = "Forced march: one level of exhaustion per day beyond the first, saving throw at dusk.";
+      }
+    } else if (r && r.blocked) {
+      vals.noRoute = false; vals.hasRoute = true;
+      vals.daysBig = "\u2014"; vals.arrivalLabel = "no way through";
+      vals.checkLabel = "No passable road between those hexes at this pace. Try travelling by ship, or set a waypoint around the obstacle.";
+    } else if (isTable && s.waypoints.length === 1) {
+      vals.noRoute = true;
+    }
+
+    vals.waypointMarks = s.waypoints.map((i, n) => {
+      const [x, y] = this.center(i, world.w);
+      return {
+        transform: "translate(" + x.toFixed(1) + "," + y.toFixed(1) + ")",
+        numEl: React.createElement("text", {
+          y: 2.8, textAnchor: "middle", fontFamily: "IBM Plex Mono, monospace",
+          fontSize: 6.4, fontWeight: 600, fill: "#fdf3e2", style: { pointerEvents: "none" }
+        }, String(n + 1)),
+        onDown: e => { e.stopPropagation(); this.setState({ drag: { kind: "wp", n } }); }
+      };
+    });
+
+    vals.realms = world.realms.map((rr, k) => ({
+      color: rr.color, name: rr.name, detail: rr.hexes + " hex \u00b7 " + rr.seat,
+      onName: e => this.onRealmName(k, e.target.value)
+    }));
+    const counts = s.objects.reduce((a, o) => { a[o.type] = (a[o.type] || 0) + 1; return a; }, {});
+    const landCount = Array.prototype.reduce.call(world.land, (a, v) => a + v, 0);
+    vals.tally = landCount + " land hexes \u00b7 " + Math.round(landCount / world.n * 100) + "% dry \u00b7 " +
+      (counts.city || 0) + " cities, " + (counts.town || 0) + " towns, " + (counts.village || 0) + " villages, " +
+      ((counts.ruin || 0) + (counts.dungeon || 0) + (counts.camp || 0) + (counts.keep || 0)) + " wild sites";
+    vals.fogLabel = s.revealed ? s.revealed.size + " of " + world.n + " hexes charted \u00b7 the Party view honours the fog" : "";
+
+    const sel = s.selected;
+    if (sel && sel.kind === "object") {
+      const o = s.objects.find(x => x.id === sel.id);
+      if (o) {
+        vals.nothingSelected = false; vals.objSelected = true;
+        vals.selName = o.name; vals.selType = o.type; vals.selPop = o.pop; vals.selNotes = o.notes;
+        vals.selHex = label(o.hex); vals.selGround = BIOMES[world.biome[o.hex]].name;
+        const owner = world.owner[o.hex];
+        const realm = owner >= 0 ? world.realms[owner] : null;
+        vals.selRealm = realm ? "Within " + realm.name + ", seat at " + realm.seat + "." : "Beyond any realm's writ.";
+      }
+    } else if (sel && sel.kind === "hex") {
+      const i = sel.i, b = world.biome[i];
+      vals.nothingSelected = false; vals.hexSelected = true;
+      vals.selHex = label(i); vals.selGround = BIOMES[b].name;
+      const cost = BIOMES[b].cost;
+      const hh = world.land[i] ? (world.el[i] - world.sea) / (1 - world.sea) : 0;
+      vals.hexFacts = [
+        { k: "Movement cost", v: cost === null ? "water \u2014 ship only" : "\u00d7" + cost.toFixed(1) + " (" + (cost * world.hexMiles).toFixed(0) + " travel mi)" },
+        { k: "Encounter odds", v: Math.max(1, Math.round(BIOMES[b].wild * 0.42 * 6)) + "-in-6" },
+        { k: "Elevation", v: world.land[i] ? Math.round(hh * 100) + "% of relief" : "below sea level" },
+        { k: "Water", v: world.river[i] ? "river, flow " + Math.round(world.flow[i]) : BIOMES[b].water ? "open water" : "dry" },
+        { k: "Charted", v: s.revealed && s.revealed.has(i) ? "known to the party" : "unexplored" }
+      ];
+      const owner = world.owner[i];
+      const realm = owner >= 0 ? world.realms[owner] : null;
+      vals.selRealm = realm ? "Within " + realm.name + ", seat at " + realm.seat + "." : "Beyond any realm's writ.";
+    }
+    return vals;
+  }
+}
+</script>
+</body>
+</html>

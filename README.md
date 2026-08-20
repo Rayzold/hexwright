@@ -1,0 +1,69 @@
+# Hexwright
+
+A hexcrawl world-map tool for tabletop RPG referees, built from the
+`design_handoff_hexwright` reference. It does two jobs in one workspace:
+
+- **Forge** — generate a procedural hex overworld and hand-edit it (paint
+  terrain, stamp settlements and sites, name realms).
+- **Table** — plot party travel, compute distances / travel days / terrain
+  costs / encounter checks, march the party, and advance the calendar.
+
+A **Warden / Party** sight toggle hides unexplored hexes behind fog for
+player-facing display.
+
+## Stack
+
+- **React 18 + TypeScript**, bundled with **Vite**
+- **Zustand** for world state
+- **Canvas 2D** for static cartography with an **SVG overlay** for interactive
+  marks (the split the handoff recommends)
+- **localStorage** for save/load (named world slots + a silent autosave) — the
+  production requirement the prototype lacked
+
+## Running
+
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run build    # typecheck + production build to dist/
+npm run preview  # serve the production build
+```
+
+## Layout
+
+```
+src/
+  core/           pure, framework-free algorithms (ported from the prototype)
+    rng.ts        FNV-1a hash, mulberry32, value noise, fBm
+    hex.ts        pointy-top odd-row offset geometry, cube coords, pixel↔hex
+    heap.ts       binary min-heap
+    biomes.ts     terrain movement costs & encounter weights
+    themes.ts     parchment / dusk map palettes
+    names.ts      procedural place / realm / site names
+    worldgen.ts   build(): elevation → biomes → rivers → settlements →
+                  realms → sites → roads
+    travel.ts     A* / cube-line routing, route stats, pace, calendar
+  render/
+    paint.ts      canvas cartography pass with a cache key that skips redraws
+  store/
+    useStore.ts   Zustand store mirroring the prototype's state tree
+    persist.ts    serialize / deserialize + localStorage slots & autosave
+  components/     Header, MapStage, and the Forge/Table left & right panels
+```
+
+## Notes on fidelity
+
+The generation, routing, and travel algorithms are ported closely from the
+prototype's logic class; the UI is rebuilt to the hex values and typography in
+the handoff README. Two documented "known gaps" from the handoff were fixed in
+the port:
+
+- **Roads are computed in generation** (`worldgen.computeRoads`) and stored on
+  the world, rather than recomputed inside the canvas paint pass.
+- **Worlds persist.** A save only stores `params` + hand edits (paint, objects,
+  realm names, party, day, journal, revealed); the world grids regenerate
+  deterministically from `params` on load, and saved objects (with their edits)
+  are restored verbatim.
+
+The Forgotten Realms month names are carried over from the prototype; swap them
+in `core/travel.ts` (`MONTHS`) for a commercial product.
