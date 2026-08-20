@@ -9,6 +9,8 @@ import {
   saveSlot,
   type SlotMeta,
 } from "../store/persist";
+import { exportMapPNG } from "../render/mapExport";
+import { buildShareUrl } from "../store/shareUrl";
 import { useStore } from "../store/useStore";
 import { MONO } from "../ui/styles";
 
@@ -81,7 +83,19 @@ export function WorldsMenu() {
     deleteSlot(slotName);
     refresh();
   };
+  const [copied, setCopied] = useState(false);
   const doExport = () => exportToFile(useStore.getState());
+  const doExportPNG = () => exportMapPNG();
+  const doCopyLink = async () => {
+    const url = buildShareUrl(useStore.getState().params);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      window.prompt("Copy this world link:", url);
+    }
+  };
   const doImport = async (file: File) => {
     try {
       const parsed = await importFromFile(file);
@@ -210,6 +224,41 @@ export function WorldsMenu() {
                 e.target.value = "";
               }}
             />
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+            <button
+              className="hx-hover-btn"
+              style={{
+                flex: "1 1 0",
+                padding: "6px 8px",
+                background: "#241f19",
+                color: "#cfc4b0",
+                border: "1px solid #3a3025",
+                borderRadius: 3,
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+              onClick={doExportPNG}
+            >
+              Export PNG
+            </button>
+            <button
+              className="hx-hover-btn"
+              style={{
+                flex: "1 1 0",
+                padding: "6px 8px",
+                background: "#241f19",
+                color: copied ? "#f0c9a8" : "#cfc4b0",
+                border: "1px solid #3a3025",
+                borderRadius: 3,
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+              onClick={doCopyLink}
+            >
+              {copied ? "Link copied ✓" : "Copy share link"}
+            </button>
           </div>
 
           <div

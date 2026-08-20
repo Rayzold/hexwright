@@ -4,7 +4,7 @@ import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
 import { hashStr, mulberry } from "../core/rng";
 import { dateStr, pace, route } from "../core/travel";
-import { buildWorld, computeRoads } from "../core/worldgen";
+import { buildWorld, computeRoads, recomputeRealms } from "../core/worldgen";
 import type {
   BiomeKey,
   Drag,
@@ -137,6 +137,8 @@ export interface HexState {
   drag: Drag;
   /** bumped on each build() so the map stage re-runs its auto-fit. */
   fitV: number;
+  leftOpen: boolean;
+  rightOpen: boolean;
 
   // --- actions ---
   build: (keepManual: boolean) => void;
@@ -157,6 +159,9 @@ export interface HexState {
   toggleTheme: () => void;
   setBrushSize: (n: number) => void;
   toggleFill: () => void;
+  toggleLeft: () => void;
+  toggleRight: () => void;
+  setPanels: (left: boolean, right: boolean) => void;
 
   setRouteMode: (m: RouteMode) => void;
   setParty: <K extends keyof Party>(k: K, v: Party[K]) => void;
@@ -184,6 +189,7 @@ export interface HexState {
   endDrag: () => void;
 
   refreshRoads: () => void;
+  refreshRealms: () => void;
   hydrate: (patch: Partial<HexState>) => void;
 }
 
@@ -213,6 +219,8 @@ export const useStore = create<HexState>((set, get) => ({
   hover: null,
   drag: null,
   fitV: 0,
+  leftOpen: true,
+  rightOpen: true,
 
   build: (keepManual) => {
     const s = get();
@@ -269,6 +277,9 @@ export const useStore = create<HexState>((set, get) => ({
     })),
   setBrushSize: (n) => set({ brushSize: Math.max(1, Math.min(4, n)) }),
   toggleFill: () => set((s) => ({ fill: !s.fill })),
+  toggleLeft: () => set((s) => ({ leftOpen: !s.leftOpen })),
+  toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
+  setPanels: (left, right) => set({ leftOpen: left, rightOpen: right }),
 
   setRouteMode: (m) => set({ routeMode: m }),
   setParty: (k, v) => set((s) => ({ party: { ...s.party, [k]: v } })),
@@ -398,8 +409,10 @@ export const useStore = create<HexState>((set, get) => ({
     if (!BIOMES[b] || world.biome[i] === b) return;
     const cells = floodRegion(world, i);
     const delta = applyPaintCells(world, cells, b);
-    if (delta)
+    if (delta) {
       set((st) => ({ paint: { ...st.paint, ...delta }, paintV: st.paintV + 1 }));
+      get().refreshRealms();
+    }
   },
 
   beginBrush: (i) => {
@@ -506,11 +519,18 @@ export const useStore = create<HexState>((set, get) => ({
   waypointDown: (n) => set({ drag: { kind: "wp", n } }),
 
   endDrag: () => {
-    if (get().drag) {
-      // moving an object can change road connectivity; refresh on release.
-      const wasObj = get().drag?.kind === "obj";
+    const drag = get().drag;
+    if (drag) {
+      const kind = drag.kind;
       set({ drag: null });
-      if (wasObj) get().refreshRoads();
+      if (kind === "obj") {
+        // moving a holding can change both road links and realm territory
+        get().refreshRoads();
+        get().refreshRealms();
+      } else if (kind === "brush") {
+        // a paint stroke can change terrain costs, so borders may shift
+        get().refreshRealms();
+      }
     }
   },
 
@@ -518,6 +538,13 @@ export const useStore = create<HexState>((set, get) => ({
     const s = get();
     if (!s.world) return;
     s.world.roads = computeRoads(s.world, s.objects);
+    set((st) => ({ paintV: st.paintV + 1 }));
+  },
+
+  refreshRealms: () => {
+    const s = get();
+    if (!s.world) return;
+    recomputeRealms(s.world);
     set((st) => ({ paintV: st.paintV + 1 }));
   },
 

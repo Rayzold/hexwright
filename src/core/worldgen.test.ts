@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Params } from "./types";
-import { buildWorld } from "./worldgen";
+import { BIOMES } from "./biomes";
+import { buildWorld, recomputeRealms } from "./worldgen";
 
 const PARAMS: Params = {
   seed: "Aurelmoor",
@@ -71,5 +72,28 @@ describe("buildWorld", () => {
     expect(second.objects.some((o) => o.id === "m1")).toBe(true);
     // generated objects are not duplicated by the reforge
     expect(second.objects.filter((o) => o.id === "m1")).toHaveLength(1);
+  });
+
+  it("recomputeRealms reproduces the generated territory", () => {
+    const { world } = buildWorld(PARAMS);
+    const before = Array.from(world.owner);
+    recomputeRealms(world);
+    expect(Array.from(world.owner)).toEqual(before);
+  });
+
+  it("recomputeRealms reacts to terrain becoming impassable", () => {
+    const { world } = buildWorld(PARAMS);
+    let ownedBefore = 0;
+    for (let i = 0; i < world.n; i++) if (world.owner[i] >= 0) ownedBefore++;
+    // flood the whole map with deep water (no land -> no territory)
+    for (let i = 0; i < world.n; i++) {
+      world.biome[i] = "deep";
+      world.land[i] = BIOMES.deep.water ? 0 : 1;
+    }
+    recomputeRealms(world);
+    let ownedAfter = 0;
+    for (let i = 0; i < world.n; i++) if (world.owner[i] >= 0) ownedAfter++;
+    expect(ownedBefore).toBeGreaterThan(0);
+    expect(ownedAfter).toBe(0);
   });
 });

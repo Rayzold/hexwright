@@ -268,7 +268,6 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
   ];
   const realms: Realm[] = [];
   const owner = new Int16Array(n).fill(-1);
-  const heap = new Heap();
   const seats = generated
     .filter((o) => o.type === "city")
     .concat(generated.filter((o) => o.type === "town"));
@@ -306,29 +305,11 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
       name: realmName(rng),
       color: realmPalette[k % realmPalette.length],
       seat: cap0.name,
+      seatHex: cap0.hex,
       hexes: 0,
     });
-    owner[cap0.hex] = k;
-    heap.push([0, cap0.hex, k]);
   }
-  while (heap.size) {
-    const [d, i, k] = heap.pop();
-    if (owner[i] !== k && owner[i] !== -1) continue;
-    const c = i % w;
-    const r = (i - c) / w;
-    for (const [nc, nr] of nbrs(c, r)) {
-      if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
-      const j = nr * w + nc;
-      if (!land[j] || owner[j] !== -1) continue;
-      const cost = (BIOMES[biome[j]].cost || 4) + 0.2;
-      const nd = d + cost;
-      if (nd > 46) continue;
-      owner[j] = k;
-      heap.push([nd, j, k]);
-    }
-  }
-  for (let i = 0; i < n; i++)
-    if (owner[i] >= 0 && realms[owner[i]]) realms[owner[i]].hexes++;
+  floodRealms(w, h, land, biome, owner, realms);
   const keptNames = keep ? keep.realmNames : {};
   for (const k in keptNames) if (realms[+k]) realms[+k].name = keptNames[k];
 
@@ -398,6 +379,55 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
   world.roads = computeRoads(world, objects);
 
   return { world, objects };
+}
+
+/**
+ * Dijkstra flood-fill of realm territory from each realm's seat over terrain
+ * cost + 0.2, capped at cost 46. Fills `owner` and each realm's `hexes` count.
+ */
+function floodRealms(
+  w: number,
+  h: number,
+  land: Uint8Array,
+  biome: BiomeKey[],
+  owner: Int16Array,
+  realms: Realm[]
+): void {
+  owner.fill(-1);
+  const heap = new Heap();
+  for (const realm of realms) {
+    const seat = realm.seatHex;
+    if (seat < 0 || seat >= w * h || !land[seat]) continue;
+    owner[seat] = realm.id;
+    heap.push([0, seat, realm.id]);
+  }
+  while (heap.size) {
+    const [d, i, k] = heap.pop();
+    if (owner[i] !== k && owner[i] !== -1) continue;
+    const c = i % w;
+    const r = (i - c) / w;
+    for (const [nc, nr] of nbrs(c, r)) {
+      if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+      const j = nr * w + nc;
+      if (!land[j] || owner[j] !== -1) continue;
+      const cost = (BIOMES[biome[j]].cost || 4) + 0.2;
+      const nd = d + cost;
+      if (nd > 46) continue;
+      owner[j] = k;
+      heap.push([nd, j, k]);
+    }
+  }
+  for (const realm of realms) realm.hexes = 0;
+  for (let i = 0; i < w * h; i++)
+    if (owner[i] >= 0 && realms[owner[i]]) realms[owner[i]].hexes++;
+}
+
+/**
+ * Recompute realm territory on the live world after terrain painting or after a
+ * seat has moved. Mutates `world.owner` and each realm's `hexes` in place.
+ */
+export function recomputeRealms(world: World): void {
+  floodRealms(world.w, world.h, world.land, world.biome, world.owner, world.realms);
 }
 
 /**

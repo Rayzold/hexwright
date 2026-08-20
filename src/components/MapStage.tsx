@@ -5,6 +5,7 @@ import { THEMES } from "../core/themes";
 import { route as computeRoute } from "../core/travel";
 import type { MapObject, World } from "../core/types";
 import { paintCanvas, type PaintOpts } from "../render/paint";
+import { clearMapRefs, setMapRefs } from "../render/mapExport";
 import { ACCENT, useStore } from "../store/useStore";
 import { MONO } from "../ui/styles";
 
@@ -101,7 +102,18 @@ export function MapStage() {
     if (!cv || !world) return;
     const opts: PaintOpts = { theme, view, layers, revealed, fogV, paintV };
     keyRef.current = paintCanvas(cv, world, opts, keyRef.current);
+    if (svgRef.current) {
+      setMapRefs({
+        canvas: cv,
+        svg: svgRef.current,
+        pw: world.px[0],
+        ph: world.px[1],
+        seed: world.seedName,
+      });
+    }
   }, [world, theme, view, layers, revealed, fogV, paintV]);
+
+  useEffect(() => clearMapRefs, []);
 
   // --- auto-fit after generation / load ---
   useEffect(() => {

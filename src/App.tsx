@@ -6,6 +6,7 @@ import { MapStage } from "./components/MapStage";
 import { TableLeft } from "./components/TableLeft";
 import { TableRight } from "./components/TableRight";
 import { deserialize, readAutosave, writeAutosave } from "./store/persist";
+import { parseShareParams } from "./store/shareUrl";
 import { useStore } from "./store/useStore";
 
 const panelBase: React.CSSProperties = {
@@ -14,14 +15,69 @@ const panelBase: React.CSSProperties = {
   padding: "16px 15px 28px",
 };
 
+function CollapseHandle({
+  side,
+  open,
+  onClick,
+}: {
+  side: "left" | "right";
+  open: boolean;
+  onClick: () => void;
+}) {
+  // chevron points toward the action: collapse (into the panel) or expand (out)
+  const glyph =
+    side === "left" ? (open ? "‹" : "›") : open ? "›" : "‹";
+  const style: React.CSSProperties = {
+    width: 18,
+    alignSelf: "stretch",
+    flex: "0 0 18px",
+    background: "#1b1712",
+    color: "#7d7361",
+    border: "none",
+    cursor: "pointer",
+    fontSize: 13,
+    padding: 0,
+  };
+  if (side === "left") style.borderRight = "1px solid #322a20";
+  else style.borderLeft = "1px solid #322a20";
+  return (
+    <button
+      className="hx-hover-btn"
+      onClick={onClick}
+      title={open ? "Collapse panel" : "Expand panel"}
+      style={style}
+    >
+      {glyph}
+    </button>
+  );
+}
+
 export default function App() {
   const mode = useStore((s) => s.mode);
+  const leftOpen = useStore((s) => s.leftOpen);
+  const rightOpen = useStore((s) => s.rightOpen);
+  const toggleLeft = useStore((s) => s.toggleLeft);
+  const toggleRight = useStore((s) => s.toggleRight);
   const didInit = useRef(false);
 
   // --- initial load: autosave if present, else a fresh world ---
   useEffect(() => {
     if (didInit.current) return;
     didInit.current = true;
+
+    // A share link's params win over the autosave and generate that world.
+    const shared = parseShareParams(window.location.search);
+    if (shared) {
+      useStore.setState((s) => ({ params: { ...s.params, ...shared } }));
+      useStore.getState().build(false);
+      // strip the query so later edits/reloads use the autosave
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
+
+    // collapse the side panels if we open on a narrow screen
+    if (window.innerWidth < 900) useStore.getState().setPanels(false, false);
+
     const save = readAutosave();
     if (save) {
       try {
@@ -86,29 +142,35 @@ export default function App() {
     >
       <Header />
       <div style={{ display: "flex", flex: "1 1 auto", minHeight: 0 }}>
-        <aside
-          style={{
-            ...panelBase,
-            width: 268,
-            flex: "0 0 268px",
-            borderRight: "1px solid #322a20",
-          }}
-        >
-          {mode === "forge" ? <ForgeLeft /> : <TableLeft />}
-        </aside>
+        {leftOpen && (
+          <aside
+            style={{
+              ...panelBase,
+              width: 268,
+              flex: "0 0 268px",
+              borderRight: "1px solid #322a20",
+            }}
+          >
+            {mode === "forge" ? <ForgeLeft /> : <TableLeft />}
+          </aside>
+        )}
+        <CollapseHandle side="left" open={leftOpen} onClick={toggleLeft} />
 
         <MapStage />
 
-        <aside
-          style={{
-            ...panelBase,
-            width: 316,
-            flex: "0 0 316px",
-            borderLeft: "1px solid #322a20",
-          }}
-        >
-          {mode === "forge" ? <ForgeRight /> : <TableRight />}
-        </aside>
+        <CollapseHandle side="right" open={rightOpen} onClick={toggleRight} />
+        {rightOpen && (
+          <aside
+            style={{
+              ...panelBase,
+              width: 316,
+              flex: "0 0 316px",
+              borderLeft: "1px solid #322a20",
+            }}
+          >
+            {mode === "forge" ? <ForgeRight /> : <TableRight />}
+          </aside>
+        )}
       </div>
     </div>
   );

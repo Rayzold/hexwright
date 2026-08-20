@@ -72,6 +72,8 @@ export interface Realm {
   name: string;
   color: string;
   seat: string;
+  /** hex index of the realm's seat, used to recompute territory after edits. */
+  seatHex: number;
   hexes: number;
 }
 
