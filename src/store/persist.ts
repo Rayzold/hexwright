@@ -129,3 +129,30 @@ export function readAutosave(): SaveFile | null {
     return null;
   }
 }
+
+/** Download the current world as a portable .hexwright.json file. */
+export function exportToFile(s: HexState): void {
+  const file = serialize(s);
+  const safe = (file.params.seed || "world").replace(/[^\w.-]+/g, "_");
+  const blob = new Blob([JSON.stringify(file, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = safe + ".hexwright.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** Read and validate a world file chosen from disk. */
+export async function importFromFile(file: File): Promise<SaveFile> {
+  const text = await file.text();
+  const parsed = JSON.parse(text) as SaveFile;
+  if (!parsed || typeof parsed !== "object" || !parsed.params) {
+    throw new Error("Not a Hexwright world file.");
+  }
+  return parsed;
+}

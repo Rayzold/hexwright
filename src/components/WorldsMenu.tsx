@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import {
   deleteSlot,
   deserialize,
+  exportToFile,
+  importFromFile,
   listSlots,
   readSlot,
   saveSlot,
@@ -38,6 +40,7 @@ export function WorldsMenu() {
   const [slots, setSlots] = useState<SlotMeta[]>([]);
   const [name, setName] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const seed = useStore((s) => s.params.seed);
   const hydrate = useStore((s) => s.hydrate);
@@ -77,6 +80,20 @@ export function WorldsMenu() {
   const doDelete = (slotName: string) => {
     deleteSlot(slotName);
     refresh();
+  };
+  const doExport = () => exportToFile(useStore.getState());
+  const doImport = async (file: File) => {
+    try {
+      const parsed = await importFromFile(file);
+      hydrate(deserialize(parsed));
+      hydrate({ fitV: useStore.getState().fitV + 1 });
+      setOpen(false);
+    } catch (err) {
+      alert(
+        "Couldn't read that file — " +
+          (err instanceof Error ? err.message : "unknown error.")
+      );
+    }
   };
 
   return (
@@ -147,6 +164,52 @@ export function WorldsMenu() {
             >
               Save
             </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+            <button
+              className="hx-hover-btn"
+              style={{
+                flex: "1 1 0",
+                padding: "6px 8px",
+                background: "#241f19",
+                color: "#cfc4b0",
+                border: "1px solid #3a3025",
+                borderRadius: 3,
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+              onClick={doExport}
+            >
+              Export file
+            </button>
+            <button
+              className="hx-hover-btn"
+              style={{
+                flex: "1 1 0",
+                padding: "6px 8px",
+                background: "#241f19",
+                color: "#cfc4b0",
+                border: "1px solid #3a3025",
+                borderRadius: 3,
+                fontSize: 11,
+                cursor: "pointer",
+              }}
+              onClick={() => fileRef.current?.click()}
+            >
+              Import file
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".json,application/json"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) doImport(f);
+                e.target.value = "";
+              }}
+            />
           </div>
 
           <div
