@@ -4,7 +4,8 @@ import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
 import { hashStr, mulberry } from "../core/rng";
 import { dateStr, pace, route } from "../core/travel";
-import { buildWorld, computeRoads, recomputeRealms } from "../core/worldgen";
+import { computeRoads, recomputeRealms } from "../core/worldgen";
+import { generate } from "../workers/gen";
 import type {
   BiomeKey,
   Drag,
@@ -227,16 +228,18 @@ export const useStore = create<HexState>((set, get) => ({
     const keep = keepManual
       ? { paint: s.paint, realmNames: s.realmNames, objects: s.objects }
       : undefined;
-    const { world, objects } = buildWorld(s.params, keep);
-    set({
-      world,
-      objects,
-      selected: null,
-      waypoints: [],
-      revealed: new Set<number>(),
-      paint: keepManual ? s.paint : {},
-      fogV: s.fogV + 1,
-      fitV: s.fitV + 1,
+    // generation runs in a worker; the store updates when it resolves
+    generate(s.params, keep).then(({ world, objects }) => {
+      set((st) => ({
+        world,
+        objects,
+        selected: null,
+        waypoints: [],
+        revealed: new Set<number>(),
+        paint: keepManual ? st.paint : {},
+        fogV: st.fogV + 1,
+        fitV: st.fitV + 1,
+      }));
     });
   },
 

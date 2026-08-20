@@ -144,19 +144,42 @@ export function paintCanvas(
   }
 
   // --- rivers ---
+  // Each river hex is drawn as a quadratic curve from the midpoint of its
+  // upstream edge, through its center, to the midpoint of its downstream edge.
+  // Routing through edge midpoints instead of straight center-to-center lines
+  // keeps the watercourse smooth when zoomed in.
   if (o.layers.rivers) {
+    // one representative upstream per hex (for the incoming curve tangent)
+    const up = new Int32Array(n).fill(-1);
+    for (let i = 0; i < n; i++) {
+      if (!world.river[i]) continue;
+      const j = world.next[i];
+      if (j >= 0 && world.river[j]) up[j] = i;
+    }
     g.strokeStyle = T.river;
     g.lineCap = "round";
+    g.lineJoin = "round";
     for (let i = 0; i < n; i++) {
       if (!world.river[i]) continue;
       const j = world.next[i];
       if (j < 0) continue;
-      const [x1, y1] = center(i, w);
-      const [x2, y2] = center(j, w);
+      const [cx, cy] = center(i, w);
+      const [nx, ny] = center(j, w);
+      // start: midpoint toward the upstream hex, or the center if a source
+      let sx = cx;
+      let sy = cy;
+      const u = up[i];
+      if (u >= 0) {
+        const [ux, uy] = center(u, w);
+        sx = (cx + ux) / 2;
+        sy = (cy + uy) / 2;
+      }
+      const ex = (cx + nx) / 2;
+      const ey = (cy + ny) / 2;
       g.lineWidth = Math.min(3.4, 0.7 + Math.sqrt(world.flow[i]) * 0.42);
       g.beginPath();
-      g.moveTo(x1, y1);
-      g.lineTo(x2, y2);
+      g.moveTo(sx, sy);
+      g.quadraticCurveTo(cx, cy, ex, ey);
       g.stroke();
     }
   }
