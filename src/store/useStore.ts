@@ -38,6 +38,78 @@ const DEFAULT_PARAMS: Params = {
   edge: "sea",
 };
 
+/** Hexes within `size-1` rings of `center` (size 1 = just the center). */
+function hexRegion(world: World, center: number, size: number): number[] {
+  if (size <= 1) return [center];
+  const { w, h } = world;
+  const seen = new Set<number>([center]);
+  let frontier = [center];
+  for (let d = 1; d < size; d++) {
+    const next: number[] = [];
+    for (const cur of frontier) {
+      const c = cur % w;
+      const r = (cur - c) / w;
+      for (const [nc, nr] of nbrs(c, r)) {
+        if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+        const j = nr * w + nc;
+        if (!seen.has(j)) {
+          seen.add(j);
+          next.push(j);
+        }
+      }
+    }
+    frontier = next;
+  }
+  return [...seen];
+}
+
+/** Connected hexes sharing `center`'s current biome (paint-bucket region). */
+function floodRegion(world: World, center: number): number[] {
+  const { w, h } = world;
+  const target = world.biome[center];
+  const seen = new Set<number>([center]);
+  const stack = [center];
+  const out: number[] = [];
+  while (stack.length) {
+    const cur = stack.pop()!;
+    out.push(cur);
+    const c = cur % w;
+    const r = (cur - c) / w;
+    for (const [nc, nr] of nbrs(c, r)) {
+      if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
+      const j = nr * w + nc;
+      if (!seen.has(j) && world.biome[j] === target) {
+        seen.add(j);
+        stack.push(j);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Paint `b` onto `cells`, mutating the world's typed arrays in place. Returns a
+ * paint delta ({ [hex]: biome }) for the hexes that actually changed, or null.
+ */
+function applyPaintCells(
+  world: World,
+  cells: number[],
+  b: BiomeKey
+): Record<number, BiomeKey> | null {
+  const water = !!BIOMES[b].water;
+  const delta: Record<number, BiomeKey> = {};
+  let changed = false;
+  for (const i of cells) {
+    if (world.biome[i] === b) continue;
+    world.biome[i] = b;
+    world.land[i] = water ? 0 : 1;
+    if (water) world.river[i] = 0;
+    delta[i] = b;
+    changed = true;
+  }
+  return changed ? delta : null;
+}
+
 export interface HexState {
   mode: Mode;
   view: ViewKey;
@@ -51,6 +123,8 @@ export interface HexState {
   objects: MapObject[];
   selected: Selected;
   tool: string; // '' | 'city' | ... | 't:mountains'
+  brushSize: number; // terrain brush radius in hexes (1 = single hex)
+  fill: boolean; // flood-fill mode for the terrain brush
   routeMode: RouteMode;
   waypoints: number[];
   party: Party;
@@ -79,6 +153,10 @@ export interface HexState {
   setZoom: (z: number) => void;
   toggleLayer: (k: keyof Layers) => void;
   pickTool: (name: string) => void;
+  setTheme: (t: ThemeKey) => void;
+  toggleTheme: () => void;
+  setBrushSize: (n: number) => void;
+  toggleFill: () => void;
 
   setRouteMode: (m: RouteMode) => void;
   setParty: <K extends keyof Party>(k: K, v: Party[K]) => void;
@@ -96,6 +174,7 @@ export interface HexState {
   // map interactions (component computes hex index)
   hoverHex: (i: number | null) => void;
   brushHex: (i: number) => void;
+  floodFill: (i: number) => void;
   beginBrush: (i: number) => void;
   mapClick: (i: number) => void;
   pointerMove: (i: number) => void;
@@ -121,6 +200,8 @@ export const useStore = create<HexState>((set, get) => ({
   objects: [],
   selected: null,
   tool: "",
+  brushSize: 1,
+  fill: false,
   routeMode: "manual",
   waypoints: [],
   party: { speed: "foot", march: false, season: "summer", weather: "clear" },
@@ -180,6 +261,14 @@ export const useStore = create<HexState>((set, get) => ({
   setZoom: (z) => set({ zoom: z }),
   toggleLayer: (k) => set((s) => ({ layers: { ...s.layers, [k]: !s.layers[k] } })),
   pickTool: (name) => set({ tool: name }),
+  setTheme: (t) => set((s) => ({ theme: t, paintV: s.paintV + 1 })),
+  toggleTheme: () =>
+    set((s) => ({
+      theme: s.theme === "parchment" ? "dusk" : "parchment",
+      paintV: s.paintV + 1,
+    })),
+  setBrushSize: (n) => set({ brushSize: Math.max(1, Math.min(4, n)) }),
+  toggleFill: () => set((s) => ({ fill: !s.fill })),
 
   setRouteMode: (m) => set({ routeMode: m }),
   setParty: (k, v) => set((s) => ({ party: { ...s.party, [k]: v } })),
@@ -267,9 +356,11 @@ export const useStore = create<HexState>((set, get) => ({
   patchSel: (patch) => {
     const sel = get().selected;
     if (!sel || sel.kind !== "object") return;
+    // Editing a generated holding promotes it to hand-placed so the edit
+    // survives the next reforge.
     set((s) => ({
       objects: s.objects.map((o) =>
-        o.id === sel.id ? { ...o, ...patch } : o
+        o.id === sel.id ? { ...o, ...patch, gen: false } : o
       ),
     }));
   },
@@ -289,21 +380,36 @@ export const useStore = create<HexState>((set, get) => ({
 
   brushHex: (i) => {
     const s = get();
-    const b = s.tool.slice(2) as BiomeKey;
     const world = s.world;
-    if (!world || !BIOMES[b] || world.biome[i] === b) return;
-    world.biome[i] = b;
-    world.land[i] = BIOMES[b].water ? 0 : 1;
-    if (BIOMES[b].water) world.river[i] = 0;
-    set((st) => ({
-      paint: { ...st.paint, [i]: b },
-      paintV: st.paintV + 1,
-    }));
+    if (!world || !s.tool.startsWith("t:")) return;
+    const b = s.tool.slice(2) as BiomeKey;
+    if (!BIOMES[b]) return;
+    const cells = hexRegion(world, i, s.brushSize);
+    const delta = applyPaintCells(world, cells, b);
+    if (delta)
+      set((st) => ({ paint: { ...st.paint, ...delta }, paintV: st.paintV + 1 }));
+  },
+
+  floodFill: (i) => {
+    const s = get();
+    const world = s.world;
+    if (!world || !s.tool.startsWith("t:")) return;
+    const b = s.tool.slice(2) as BiomeKey;
+    if (!BIOMES[b] || world.biome[i] === b) return;
+    const cells = floodRegion(world, i);
+    const delta = applyPaintCells(world, cells, b);
+    if (delta)
+      set((st) => ({ paint: { ...st.paint, ...delta }, paintV: st.paintV + 1 }));
   },
 
   beginBrush: (i) => {
     const s = get();
     if (s.mode !== "forge" || !s.tool.startsWith("t:")) return;
+    if (s.fill) {
+      // flood is click-only; don't start a paint drag
+      get().floodFill(i);
+      return;
+    }
     set({ drag: { kind: "brush" } });
     get().brushHex(i);
   },
@@ -318,7 +424,7 @@ export const useStore = create<HexState>((set, get) => ({
     }
     const tool = s.tool;
     if (tool.startsWith("t:")) {
-      get().brushHex(i);
+      // beginBrush already handled the paint/flood on mousedown
       return;
     }
     if (tool) {
@@ -375,9 +481,10 @@ export const useStore = create<HexState>((set, get) => ({
         return;
       }
       if (drag.kind === "obj") {
+        // moving a holding also promotes a generated one to hand-placed
         set((st) => ({
           objects: st.objects.map((o) =>
-            o.id === drag.id ? { ...o, hex: i } : o
+            o.id === drag.id ? { ...o, hex: i, gen: false } : o
           ),
           hover: i,
         }));

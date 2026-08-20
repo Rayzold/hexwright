@@ -45,6 +45,10 @@ const wellCaption: React.CSSProperties = {
 export function ForgeRight() {
   const tool = useStore((s) => s.tool);
   const pickTool = useStore((s) => s.pickTool);
+  const brushSize = useStore((s) => s.brushSize);
+  const setBrushSize = useStore((s) => s.setBrushSize);
+  const fill = useStore((s) => s.fill);
+  const toggleFill = useStore((s) => s.toggleFill);
   const world = useStore((s) => s.world);
   const objects = useStore((s) => s.objects);
   const selected = useStore((s) => s.selected);
@@ -103,8 +107,51 @@ export function ForgeRight() {
           </button>
         ))}
       </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 11, color: "#9a8f7c" }}>Size</span>
+        <div style={{ display: "flex", gap: 4 }}>
+          {[1, 2, 3, 4].map((n) => (
+            <button
+              key={n}
+              onClick={() => setBrushSize(n)}
+              disabled={fill}
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 3,
+                cursor: fill ? "default" : "pointer",
+                fontFamily: MONO,
+                fontSize: 11,
+                opacity: fill ? 0.4 : 1,
+                border: "1px solid " + (brushSize === n && !fill ? "#8a4a24" : "#3a3025"),
+                background: brushSize === n && !fill ? "#3a2016" : "#241f19",
+                color: brushSize === n && !fill ? "#f0c9a8" : "#cfc4b0",
+              }}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={toggleFill}
+          style={{
+            marginLeft: "auto",
+            padding: "5px 10px",
+            borderRadius: 3,
+            cursor: "pointer",
+            fontSize: 11,
+            border: "1px solid " + (fill ? "#8a4a24" : "#3a3025"),
+            background: fill ? "#3a2016" : "#241f19",
+            color: fill ? "#f0c9a8" : "#cfc4b0",
+          }}
+        >
+          Fill
+        </button>
+      </div>
       <div style={{ fontSize: 10, color: "#6f6656", lineHeight: 1.5, marginBottom: 18 }}>
-        {brushHint}
+        {fill
+          ? "Fill mode: click a hex to flood every connected hex of the same ground."
+          : brushHint}
       </div>
 
       <div style={sectionHeader}>Stamps</div>
@@ -338,7 +385,6 @@ export function ForgeRight() {
     </div>
   );
 
-  // eslint-disable-next-line no-inner-declarations
   function hexFacts(i: number): { k: string; v: string }[] {
     if (!world) return [];
     const b = world.biome[i];

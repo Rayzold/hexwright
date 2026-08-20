@@ -18,10 +18,12 @@ export function Header() {
   const mode = useStore((s) => s.mode);
   const view = useStore((s) => s.view);
   const zoom = useStore((s) => s.zoom);
+  const theme = useStore((s) => s.theme);
   const setMode = useStore((s) => s.setMode);
   const setView = useStore((s) => s.setView);
   const zoomIn = useStore((s) => s.zoomIn);
   const zoomOut = useStore((s) => s.zoomOut);
+  const toggleTheme = useStore((s) => s.toggleTheme);
 
   return (
     <header
@@ -87,6 +89,14 @@ export function Header() {
           marginLeft: "auto",
         }}
       >
+        <button
+          className="hx-hover-btn"
+          style={{ ...zoomBtn, width: "auto", padding: "0 10px", fontSize: 12 }}
+          onClick={toggleTheme}
+          title={theme === "parchment" ? "Parchment map — switch to dusk" : "Dusk map — switch to parchment"}
+        >
+          {theme === "parchment" ? "☀" : "☾"}
+        </button>
         <WorldsMenu />
         <div style={{ width: 1, height: 22, background: "#322a20", margin: "0 2px" }} />
         <span

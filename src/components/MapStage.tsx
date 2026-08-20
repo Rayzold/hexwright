@@ -73,6 +73,10 @@ export function MapStage() {
   const svgRef = useRef<SVGSVGElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keyRef = useRef<string | null>(null);
+  const zoomRef = useRef(1);
+  const spaceRef = useRef(false);
+  const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
+  const pannedRef = useRef(false);
 
   const world = useStore((s) => s.world);
   const zoom = useStore((s) => s.zoom);
@@ -147,6 +151,96 @@ export function MapStage() {
     const onUp = () => useStore.getState().endDrag();
     window.addEventListener("mouseup", onUp);
     return () => window.removeEventListener("mouseup", onUp);
+  }, []);
+
+  // keep a ref to the latest zoom for the native wheel handler
+  zoomRef.current = zoom;
+
+  // --- drag-to-pan (middle mouse, or space + left) and wheel zoom ---
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !spaceRef.current) {
+        spaceRef.current = true;
+        el.style.cursor = "grab";
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        spaceRef.current = false;
+        el.style.cursor = "";
+      }
+    };
+
+    // capture phase so a pan gesture pre-empts the SVG interaction handlers
+    const onDownCapture = (e: MouseEvent) => {
+      const pan = e.button === 1 || (e.button === 0 && spaceRef.current);
+      if (!pan) return;
+      e.preventDefault();
+      e.stopPropagation();
+      panRef.current = { x: e.clientX, y: e.clientY, sl: el.scrollLeft, st: el.scrollTop };
+      pannedRef.current = false;
+      el.style.cursor = "grabbing";
+    };
+    const onMove = (e: MouseEvent) => {
+      const p = panRef.current;
+      if (!p) return;
+      pannedRef.current = true;
+      el.scrollLeft = p.sl - (e.clientX - p.x);
+      el.scrollTop = p.st - (e.clientY - p.y);
+    };
+    // swallow the click that fires right after a left-drag pan
+    const onClickCapture = (e: MouseEvent) => {
+      if (pannedRef.current) {
+        pannedRef.current = false;
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    const onUp = () => {
+      if (panRef.current) {
+        panRef.current = null;
+        el.style.cursor = spaceRef.current ? "grab" : "";
+      }
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const z = zoomRef.current;
+      // world-pixel point under the cursor (inner div has an 18px margin)
+      const wx = (el.scrollLeft + mx - 18) / z;
+      const wy = (el.scrollTop + my - 18) / z;
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      const nz = Math.max(0.5, Math.min(2.4, +(z * factor).toFixed(2)));
+      if (nz === z) return;
+      useStore.getState().setZoom(nz);
+      requestAnimationFrame(() => {
+        el.scrollLeft = wx * nz + 18 - mx;
+        el.scrollTop = wy * nz + 18 - my;
+      });
+    };
+
+    el.addEventListener("mousedown", onDownCapture, true);
+    el.addEventListener("click", onClickCapture, true);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      el.removeEventListener("mousedown", onDownCapture, true);
+      el.removeEventListener("click", onClickCapture, true);
+      el.removeEventListener("wheel", onWheel);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
   }, []);
 
   // --- derived route ---
