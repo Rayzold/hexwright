@@ -256,7 +256,7 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
       id: "g" + k,
       gen: true,
       type: t,
-      name: placeName(rng),
+      name: placeName(rng, p.nameStyle),
       hex: i,
       pop,
       notes: "",
@@ -307,7 +307,7 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
     const cap0 = cities[k];
     realms.push({
       id: k,
-      name: realmName(rng),
+      name: realmName(rng, p.nameStyle),
       color: realmPalette[k % realmPalette.length],
       seat: cap0.name,
       seatHex: cap0.hex,
@@ -350,7 +350,7 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
       id: "s" + k,
       gen: true,
       type: t,
-      name: siteName(rng),
+      name: siteName(rng, p.nameStyle),
       hex: i,
       pop: 0,
       notes: "",

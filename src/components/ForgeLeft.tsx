@@ -130,6 +130,16 @@ export function ForgeLeft() {
         <option value="open">Unsurveyed — land runs off the edge</option>
       </select>
 
+      <label style={fieldLabel}>Naming</label>
+      <select
+        value={params.nameStyle}
+        onChange={(e) => setParam("nameStyle", e.target.value as typeof params.nameStyle)}
+        style={{ ...inputStyle, marginBottom: 14 }}
+      >
+        <option value="scarred">Scarred Lands</option>
+        <option value="classic">Classic fantasy</option>
+      </select>
+
       <div
         style={{
           display: "flex",

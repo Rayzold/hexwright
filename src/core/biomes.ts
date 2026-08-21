@@ -24,4 +24,6 @@ export const BIOMES: Record<BiomeKey, BiomeDef> = {
   hills: { name: "Hills", cost: 1.9, wild: 0.35 },
   mountains: { name: "Mountains", cost: 3.2, wild: 0.5 },
   snow: { name: "Snowcap", cost: 2.8, wild: 0.5 },
+  // The Scar — blighted arcane ground. Passable but punishing and dangerous.
+  scar: { name: "The Scar", cost: 3.0, wild: 0.7 },
 };

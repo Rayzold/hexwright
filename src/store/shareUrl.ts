@@ -20,6 +20,7 @@ export function buildShareUrl(params: Params): string {
   q.set("seed", params.seed);
   q.set("size", params.size);
   q.set("edge", params.edge);
+  q.set("nameStyle", params.nameStyle);
   for (const k of NUM_KEYS) q.set(k, String(params[k]));
   const base =
     window.location.origin + window.location.pathname;
@@ -38,6 +39,9 @@ export function parseShareParams(search: string): Partial<Params> | null {
     out.size = size as SizeKey;
   const edge = q.get("edge");
   if (edge === "sea" || edge === "open") out.edge = edge as EdgeKey;
+  const nameStyle = q.get("nameStyle");
+  if (nameStyle === "classic" || nameStyle === "scarred")
+    out.nameStyle = nameStyle;
   for (const k of NUM_KEYS) {
     const v = q.get(k);
     if (v !== null && v !== "" && !Number.isNaN(Number(v))) {

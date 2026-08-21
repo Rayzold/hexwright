@@ -2,7 +2,9 @@ import { useStore } from "../store/useStore";
 import {
   CAMPAIGN_START_DAY,
   SEASON_LABEL,
+  WEATHER_LABEL,
   dateStr,
+  forecastWeather,
   holidayOn,
   nextHoliday,
   seasonOfDay,
@@ -23,6 +25,7 @@ export function TableLeft() {
   const party = useStore((s) => s.party);
   const setParty = useStore((s) => s.setParty);
   const toggleMarch = useStore((s) => s.toggleMarch);
+  const rollWeather = useStore((s) => s.rollWeather);
   const day = useStore((s) => s.day);
   const routeMode = useStore((s) => s.routeMode);
   const setRouteMode = useStore((s) => s.setRouteMode);
@@ -55,6 +58,7 @@ export function TableLeft() {
         <option value="foot">On foot — 24 mi/day</option>
         <option value="mounted">Mounted — 36 mi/day</option>
         <option value="ship">By ship — 48 mi/day</option>
+        <option value="air">By airship — 72 mi/day</option>
       </select>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 13 }}>
@@ -87,6 +91,37 @@ export function TableLeft() {
             <option value="crystalstorm">Crystal storm</option>
           </select>
         </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 13,
+        }}
+      >
+        <span style={{ fontSize: 10, color: "#8e8471", flex: "1 1 auto", lineHeight: 1.4 }}>
+          Observatory: {WEATHER_LABEL[forecastWeather(party.season)].toLowerCase()} likely this
+          season
+        </span>
+        <button
+          className="hx-hover-btn"
+          onClick={rollWeather}
+          title="Roll weather for the season"
+          style={{
+            flex: "0 0 auto",
+            padding: "5px 9px",
+            background: "#241f19",
+            color: "#cfc4b0",
+            border: "1px solid #3a3025",
+            borderRadius: 3,
+            fontSize: 10,
+            cursor: "pointer",
+          }}
+        >
+          Roll weather
+        </button>
       </div>
 
       <button

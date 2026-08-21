@@ -98,3 +98,18 @@ Features added on top of the handoff:
 - **Live realm territory** — borders recompute after painting and settlement moves
 - **Collapsible side panels** (auto-collapse on narrow screens)
 - **Web Worker generation** and smoothed river curves
+
+### Campaign theming (The Scarred Lands / New Grandia)
+
+Adapted to a specific homebrew D&D campaign, drawing on its public Crystal Forge
+sim config (no DM-secret material):
+
+- **Calendar** — the campaign's own 336-day year (12 × 28-day months, "AC" era),
+  weekdays, and holidays; the Reckoning shows weekday, season, and next holiday
+- **Seasons** — the four weather-named seasons (Twilight / Mists / Embers / Gloom),
+  auto-derived from the in-world date
+- **Weather** — campaign weather (Ashfall, Crystal storm) with a season-weighted
+  **Roll weather** and an Observatory-style forecast
+- **The Scar** — a paintable blighted/arcane land biome
+- **Airship travel** — a pace that flies over all terrain and water at flat cost
+- **Naming** — a Scarred Lands place/realm/site name style (toggle to Classic)

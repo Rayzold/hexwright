@@ -72,7 +72,12 @@ export const HOLIDAYS: Holiday[] = [
   name: name as string,
 }));
 
-export const PACE: Record<SpeedKey, number> = { foot: 24, mounted: 36, ship: 48 };
+export const PACE: Record<SpeedKey, number> = {
+  foot: 24,
+  mounted: 36,
+  ship: 48,
+  air: 72,
+};
 // The season names are weather-coded, so the modifiers lean into that:
 // Embers (fierce light) travels best; the Twilight cold is the harshest.
 export const SEASON_MOD: Record<SeasonKey, number> = {
@@ -91,6 +96,51 @@ export const WEATHER_MOD: Record<WeatherKey, number> = {
   crystalstorm: 0.5,
 };
 
+export const WEATHER_LABEL: Record<WeatherKey, string> = {
+  clear: "Clear",
+  rain: "Rain",
+  fog: "Fog",
+  ashfall: "Ashfall",
+  snow: "Snow",
+  storm: "Storm",
+  crystalstorm: "Crystal storm",
+};
+
+// What each season tends to throw at travellers — the Observatory's odds.
+export const WEATHER_WEIGHTS: Record<SeasonKey, Partial<Record<WeatherKey, number>>> = {
+  twilight: { clear: 3, snow: 4, storm: 2, fog: 2, rain: 1, crystalstorm: 1 },
+  mists: { fog: 5, rain: 3, clear: 2, storm: 2, crystalstorm: 1 },
+  embers: { clear: 5, ashfall: 3, storm: 1, rain: 1, crystalstorm: 1 },
+  gloom: { rain: 4, fog: 3, clear: 2, storm: 2, snow: 1, crystalstorm: 1 },
+};
+
+/** Weighted random weather for a season. */
+export function rollWeather(season: SeasonKey, rng: () => number): WeatherKey {
+  const w = WEATHER_WEIGHTS[season];
+  const entries = Object.entries(w) as [WeatherKey, number][];
+  const total = entries.reduce((a, [, n]) => a + n, 0);
+  let r = rng() * total;
+  for (const [k, n] of entries) {
+    r -= n;
+    if (r <= 0) return k;
+  }
+  return entries[0][0];
+}
+
+/** The single most likely weather for a season (for the forecast line). */
+export function forecastWeather(season: SeasonKey): WeatherKey {
+  const w = WEATHER_WEIGHTS[season];
+  let best: WeatherKey = "clear";
+  let bestN = -1;
+  for (const [k, n] of Object.entries(w) as [WeatherKey, number][]) {
+    if (n > bestN) {
+      bestN = n;
+      best = k;
+    }
+  }
+  return best;
+}
+
 /**
  * Movement cost of a cell for a given travel speed.
  * By ship: water costs 1, land is impassable. On foot/mounted: land cost +
@@ -101,6 +151,8 @@ export function cellCost(
   i: number,
   speed: SpeedKey
 ): number | null {
+  // Airships fly over everything at a flat cost — land, water, and mountains alike.
+  if (speed === "air") return 1;
   const b = BIOMES[world.biome[i]];
   const ship = speed === "ship";
   if (b.water) return ship ? 1 : null;

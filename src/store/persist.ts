@@ -86,6 +86,7 @@ export function deserialize(file: SaveFile): Partial<HexState> {
   // Default any params missing from older saves (e.g. menace).
   const params: Params = { ...file.params };
   if (params.menace == null) params.menace = 30;
+  if (params.nameStyle == null) params.nameStyle = "classic";
   const keep = {
     paint: file.paint || {},
     realmNames: file.realmNames || {},

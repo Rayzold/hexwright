@@ -28,6 +28,7 @@ export interface MapTheme {
   hills: string;
   mountains: string;
   snow: string;
+  scar: string;
 }
 
 export const THEMES: Record<ThemeKey, MapTheme> = {
@@ -58,6 +59,7 @@ export const THEMES: Record<ThemeKey, MapTheme> = {
     hills: "#c5bb90",
     mountains: "#b2a78d",
     snow: "#efece2",
+    scar: "#d98a5c",
   },
   dusk: {
     paper: "#131a21",
@@ -86,6 +88,7 @@ export const THEMES: Record<ThemeKey, MapTheme> = {
     hills: "#4a4636",
     mountains: "#555044",
     snow: "#8b8f8a",
+    scar: "#7a3a28",
   },
 };
 

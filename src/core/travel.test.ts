@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { nbrs } from "./hex";
-import { dateStr, line, pace, path, route, seasonOfDay, weekdayStr } from "./travel";
+import {
+  WEATHER_WEIGHTS,
+  cellCost,
+  dateStr,
+  line,
+  pace,
+  path,
+  rollWeather,
+  route,
+  seasonOfDay,
+  weekdayStr,
+} from "./travel";
 import type { Params, Party } from "./types";
 import { buildWorld } from "./worldgen";
 
@@ -16,6 +27,7 @@ const PARAMS: Params = {
   settlements: 46,
   pois: 40,
   menace: 30,
+  nameStyle: "scarred",
   edge: "sea",
 };
 
@@ -57,6 +69,31 @@ describe("pace", () => {
       48 * 0.78 * 0.6,
       5
     );
+  });
+});
+
+describe("airship travel", () => {
+  const { world } = buildWorld(PARAMS);
+  it("flies over every cell at a flat cost", () => {
+    for (let i = 0; i < world.n; i++) {
+      expect(cellCost(world, i, "air")).toBe(1);
+    }
+  });
+  it("is the fastest pace", () => {
+    expect(pace({ ...PARTY, speed: "air" })).toBeCloseTo(72 * 1.05, 5);
+  });
+});
+
+describe("weather", () => {
+  it("rolls only weather within the season's table", () => {
+    const rng = (() => {
+      let s = 1;
+      return () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    })();
+    const allowed = new Set(Object.keys(WEATHER_WEIGHTS.mists));
+    for (let i = 0; i < 50; i++) {
+      expect(allowed.has(rollWeather("mists", rng))).toBe(true);
+    }
   });
 });
 

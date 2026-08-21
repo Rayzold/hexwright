@@ -1,4 +1,5 @@
 // Procedural name generation — syllable tables joined. Ported from the prototype.
+import type { NameStyle } from "./types";
 
 export const SYL_A = [
   "ael", "bar", "cor", "dun", "eth", "fal", "gor", "hal", "ith", "kel",
@@ -31,6 +32,32 @@ export const MENACE_B = [
   "Warcamp", "Fastness", "Maw", "Barrows",
 ];
 
+// --- Scarred Lands flavour (original stock evoking the setting's arcane-tech
+// blight; does not reuse any roster NPC names). ---
+export const SCAR_A = [
+  "Ash", "Ember", "Cinder", "Glass", "Thread", "Vault", "Rift", "Scar",
+  "Drift", "Mote", "Echo", "Wehn", "Slag", "Verge", "Lume", "Cog",
+  "Shard", "Pale", "Hollow", "Grist", "Kiln", "Vane", "Sable", "Brack",
+  "Tarn", "Fen", "Wyr", "Gral", "Ory", "Nix",
+];
+export const SCAR_B = [
+  "reach", "hold", "mote", "vault", "spire", "gate", "watch", "fall",
+  "mire", "forge", "mark", "wend", "crux", "run", "barrow", "grave",
+  "light", "rest", "deep", "works", "weald", "verge", "coil", "shen",
+];
+export const SCAR_SITE_A = [
+  "Sundered", "Nanite", "Hollow", "Echoing", "Glassed", "Ashen",
+  "Fractured", "Silent", "Wired", "Rusted", "Drowned", "Forsaken",
+];
+export const SCAR_SITE_B = [
+  "Relay", "Reliquary", "Conduit", "Spire", "Vault", "Fane",
+  "Cradle", "Loom", "Foundry", "Warren", "Beacon", "Machine",
+];
+export const SCAR_REALM_B = [
+  "Dominion", "Reach", "Concord", "Hegemony", "Freeholds", "Protectorate",
+  "Compact", "Combine", "Enclave", "Reclamation",
+];
+
 export function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -39,18 +66,24 @@ export function pick<T>(rng: () => number, arr: T[]): T {
   return arr[Math.floor(rng() * arr.length)];
 }
 
-export function placeName(rng: () => number): string {
-  return cap(pick(rng, SYL_A)) + pick(rng, SYL_B);
+export function placeName(rng: () => number, style: NameStyle = "classic"): string {
+  return style === "scarred"
+    ? cap(pick(rng, SCAR_A)) + pick(rng, SCAR_B)
+    : cap(pick(rng, SYL_A)) + pick(rng, SYL_B);
 }
 
-export function siteName(rng: () => number): string {
-  return "The " + pick(rng, SITE_A) + " " + pick(rng, SITE_B);
+export function siteName(rng: () => number, style: NameStyle = "classic"): string {
+  return style === "scarred"
+    ? "The " + pick(rng, SCAR_SITE_A) + " " + pick(rng, SCAR_SITE_B)
+    : "The " + pick(rng, SITE_A) + " " + pick(rng, SITE_B);
 }
 
 export function lairName(rng: () => number): string {
   return "The " + pick(rng, MENACE_A) + " " + pick(rng, MENACE_B);
 }
 
-export function realmName(rng: () => number): string {
-  return cap(pick(rng, SYL_A)) + " " + pick(rng, REALM_B);
+export function realmName(rng: () => number, style: NameStyle = "classic"): string {
+  return style === "scarred"
+    ? cap(pick(rng, SCAR_A)) + " " + pick(rng, SCAR_REALM_B)
+    : cap(pick(rng, SYL_A)) + " " + pick(rng, REALM_B);
 }

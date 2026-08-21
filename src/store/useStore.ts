@@ -4,7 +4,13 @@ import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
 import { OBJECT_TYPES, hostileThreatMap } from "../core/objectTypes";
 import { hashStr, mulberry } from "../core/rng";
-import { CAMPAIGN_START_DAY, dateStr, pace, route } from "../core/travel";
+import {
+  CAMPAIGN_START_DAY,
+  dateStr,
+  pace,
+  rollWeather as rollWeatherFor,
+  route,
+} from "../core/travel";
 import { computeRoads, recomputeRealms } from "../core/worldgen";
 import { generate } from "../workers/gen";
 import type {
@@ -40,6 +46,7 @@ const DEFAULT_PARAMS: Params = {
   pois: 40,
   menace: 30,
   edge: "sea",
+  nameStyle: "scarred",
 };
 
 /** Hexes within `size-1` rings of `center` (size 1 = just the center). */
@@ -228,6 +235,7 @@ export interface HexState {
   setRouteMode: (m: RouteMode) => void;
   setParty: <K extends keyof Party>(k: K, v: Party[K]) => void;
   toggleMarch: () => void;
+  rollWeather: () => void;
   clearRoute: () => void;
   popWaypoint: () => void;
   revealAll: () => void;
@@ -329,7 +337,7 @@ export const useStore = create<HexState>((set, get) => ({
 
   reroll: () => {
     const rng = mulberry((Math.random() * 1e9) | 0);
-    get().setParam("seed", placeName(rng));
+    get().setParam("seed", placeName(rng, get().params.nameStyle));
   },
 
   regenerate: () => get().build(true),
@@ -428,6 +436,10 @@ export const useStore = create<HexState>((set, get) => ({
   setRouteMode: (m) => set({ routeMode: m }),
   setParty: (k, v) => set((s) => ({ party: { ...s.party, [k]: v } })),
   toggleMarch: () => set((s) => ({ party: { ...s.party, march: !s.party.march } })),
+  rollWeather: () =>
+    set((s) => ({
+      party: { ...s.party, weather: rollWeatherFor(s.party.season, Math.random) },
+    })),
   clearRoute: () => set({ waypoints: [] }),
   popWaypoint: () => set((s) => ({ waypoints: s.waypoints.slice(0, -1) })),
 
@@ -616,17 +628,20 @@ export const useStore = create<HexState>((set, get) => ({
     if (tool) {
       get().pushHistory();
       const rng = mulberry(hashStr(world.seedName + i + tool));
-      const isSite = tool === "ruin" || tool === "dungeon" || tool === "camp";
       const type = tool as ObjectType;
+      const style = get().params.nameStyle;
+      const isSite = OBJECT_TYPES[type].category === "site";
       const obj: MapObject = {
         id: "m" + Date.now().toString(36),
         gen: false,
         type,
         name: isSite
-          ? siteName(rng)
+          ? siteName(rng, style)
           : tool === "keep"
-            ? placeName(rng) + " Keep"
-            : placeName(rng),
+            ? placeName(rng, style) + " Keep"
+            : tool === "fort"
+              ? placeName(rng, style) + " Fort"
+              : placeName(rng, style),
         hex: i,
         pop:
           tool === "city"

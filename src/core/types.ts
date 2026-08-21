@@ -15,7 +15,8 @@ export type BiomeKey =
   | "swamp"
   | "hills"
   | "mountains"
-  | "snow";
+  | "snow"
+  | "scar";
 
 export type SizeKey = "small" | "medium" | "large" | "huge";
 export type EdgeKey = "sea" | "open";
@@ -24,7 +25,7 @@ export type ViewKey = "gm" | "players";
 export type Mode = "forge" | "table";
 export type RouteMode = "manual" | "auto";
 
-export type SpeedKey = "foot" | "mounted" | "ship";
+export type SpeedKey = "foot" | "mounted" | "ship" | "air";
 // Seasons follow the Scarred Lands calendar (Crystal Forge CalendarConfig).
 export type SeasonKey = "twilight" | "mists" | "embers" | "gloom";
 export type WeatherKey =
@@ -69,7 +70,11 @@ export interface Params {
   /** density of hostile lairs / warbands in the wilderness. */
   menace: number;
   edge: EdgeKey;
+  /** naming flavour for generated places, realms, and sites. */
+  nameStyle: NameStyle;
 }
+
+export type NameStyle = "classic" | "scarred";
 
 export interface Layers {
   grid: boolean;

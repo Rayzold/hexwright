@@ -25,6 +25,7 @@ const BRUSHES: { tool: string; label: string }[] = [
   { tool: "t:swamp", label: "Marsh" },
   { tool: "t:desert", label: "Desert" },
   { tool: "t:snow", label: "Snowcap" },
+  { tool: "t:scar", label: "The Scar" },
   { tool: "t:ocean", label: "Water" },
 ];
 
