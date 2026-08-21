@@ -25,8 +25,16 @@ export type Mode = "forge" | "table";
 export type RouteMode = "manual" | "auto";
 
 export type SpeedKey = "foot" | "mounted" | "ship";
-export type SeasonKey = "spring" | "summer" | "autumn" | "winter";
-export type WeatherKey = "clear" | "rain" | "storm" | "snow" | "fog";
+// Seasons follow the Scarred Lands calendar (Crystal Forge CalendarConfig).
+export type SeasonKey = "twilight" | "mists" | "embers" | "gloom";
+export type WeatherKey =
+  | "clear"
+  | "rain"
+  | "storm"
+  | "snow"
+  | "fog"
+  | "ashfall"
+  | "crystalstorm";
 
 /** Object kinds that can sit on the map. */
 export type ObjectType =

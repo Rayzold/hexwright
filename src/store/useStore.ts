@@ -4,7 +4,7 @@ import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
 import { OBJECT_TYPES, hostileThreatMap } from "../core/objectTypes";
 import { hashStr, mulberry } from "../core/rng";
-import { dateStr, pace, route } from "../core/travel";
+import { CAMPAIGN_START_DAY, dateStr, pace, route } from "../core/travel";
 import { computeRoads, recomputeRealms } from "../core/worldgen";
 import { generate } from "../workers/gen";
 import type {
@@ -274,8 +274,8 @@ export const useStore = create<HexState>((set, get) => ({
   fill: false,
   routeMode: "manual",
   waypoints: [],
-  party: { speed: "foot", march: false, season: "summer", weather: "clear" },
-  day: 63,
+  party: { speed: "foot", march: false, season: "embers", weather: "clear" },
+  day: CAMPAIGN_START_DAY,
   journal: [],
   revealed: null,
   fogV: 0,

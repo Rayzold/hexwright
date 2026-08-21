@@ -1,5 +1,13 @@
 import { useStore } from "../store/useStore";
-import { dateStr } from "../core/travel";
+import {
+  CAMPAIGN_START_DAY,
+  SEASON_LABEL,
+  dateStr,
+  holidayOn,
+  nextHoliday,
+  seasonOfDay,
+  weekdayStr,
+} from "../core/travel";
 import {
   MONO,
   SERIF,
@@ -57,10 +65,10 @@ export function TableLeft() {
             onChange={(e) => setParty("season", e.target.value as typeof party.season)}
             style={{ ...inputStyle, padding: "6px 7px" }}
           >
-            <option value="spring">Spring</option>
-            <option value="summer">Summer</option>
-            <option value="autumn">Autumn</option>
-            <option value="winter">Winter</option>
+            <option value="twilight">Twilight</option>
+            <option value="mists">Mists</option>
+            <option value="embers">Embers</option>
+            <option value="gloom">Gloom</option>
           </select>
         </div>
         <div style={{ flex: "1 1 0", minWidth: 0 }}>
@@ -72,9 +80,11 @@ export function TableLeft() {
           >
             <option value="clear">Clear</option>
             <option value="rain">Rain</option>
-            <option value="storm">Storm</option>
-            <option value="snow">Snow</option>
             <option value="fog">Fog</option>
+            <option value="ashfall">Ashfall</option>
+            <option value="snow">Snow</option>
+            <option value="storm">Storm</option>
+            <option value="crystalstorm">Crystal storm</option>
           </select>
         </div>
       </div>
@@ -111,9 +121,26 @@ export function TableLeft() {
       >
         {dateStr(day)}
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: "#7d7361", marginBottom: 14 }}>
-        Campaign day {day - 62}
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#7d7361", marginBottom: 4 }}>
+        {weekdayStr(day)} · Campaign day {day - (CAMPAIGN_START_DAY - 1)}
       </div>
+      {(() => {
+        const today = holidayOn(day);
+        const nh = nextHoliday(day);
+        return (
+          <div style={{ fontSize: 10, color: "#8e8471", lineHeight: 1.5, marginBottom: 14 }}>
+            {SEASON_LABEL[seasonOfDay(day)]}
+            {today ? (
+              <>
+                {" · "}
+                <span style={{ color: "#c9a24a" }}>{today}</span> (today)
+              </>
+            ) : (
+              " · " + nh.name + " in " + nh.inDays + "d"
+            )}
+          </div>
+        );
+      })()}
 
       <div style={{ ...hairline, margin: "0 0 14px" }} />
 

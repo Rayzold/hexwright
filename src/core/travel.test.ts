@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { nbrs } from "./hex";
-import { dateStr, line, pace, path, route } from "./travel";
+import { dateStr, line, pace, path, route, seasonOfDay, weekdayStr } from "./travel";
 import type { Params, Party } from "./types";
 import { buildWorld } from "./worldgen";
 
@@ -19,7 +19,7 @@ const PARAMS: Params = {
   edge: "sea",
 };
 
-const PARTY: Party = { speed: "foot", march: false, season: "summer", weather: "clear" };
+const PARTY: Party = { speed: "foot", march: false, season: "embers", weather: "clear" };
 
 /** find a land hex that has a land neighbour, return [i, j]. */
 function adjacentLandPair(world: ReturnType<typeof buildWorld>["world"]): [number, number] {
@@ -39,18 +39,21 @@ function adjacentLandPair(world: ReturnType<typeof buildWorld>["world"]): [numbe
 
 describe("calendar", () => {
   it("formats the campaign start day", () => {
-    expect(dateStr(63)).toBe("4 Ches, 1492 DR");
+    // campaign day 1 = 17 Firethorn, 1218 AC (absolute day 156)
+    expect(dateStr(156)).toBe("17 Firethorn, 1218 AC");
+    expect(weekdayStr(156)).toBe("Glimmerday");
+    expect(seasonOfDay(156)).toBe("embers");
   });
-  it("rolls over years", () => {
-    expect(dateStr(360)).toBe("1 Hammer, 1493 DR");
+  it("rolls over years after 336 days", () => {
+    expect(dateStr(336)).toBe("1 Iceheart, 1219 AC");
   });
 });
 
 describe("pace", () => {
   it("multiplies base pace by season, weather, and forced march", () => {
-    expect(pace(PARTY)).toBeCloseTo(24 * 1.05, 5);
+    expect(pace(PARTY)).toBeCloseTo(24 * 1.05, 5); // embers
     expect(pace({ ...PARTY, march: true })).toBeCloseTo(24 * 1.05 * 1.25, 5);
-    expect(pace({ ...PARTY, speed: "ship", season: "winter", weather: "storm" })).toBeCloseTo(
+    expect(pace({ ...PARTY, speed: "ship", season: "twilight", weather: "storm" })).toBeCloseTo(
       48 * 0.78 * 0.6,
       5
     );

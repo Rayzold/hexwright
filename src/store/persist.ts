@@ -4,7 +4,44 @@
 import { computeRoads } from "../core/worldgen";
 import { buildWorld } from "../core/worldgen";
 import { normalizeObject } from "../core/objectTypes";
-import type { BiomeKey, Params, SaveFile } from "../core/types";
+import type {
+  BiomeKey,
+  Params,
+  Party,
+  SaveFile,
+  SeasonKey,
+  WeatherKey,
+} from "../core/types";
+
+const SEASONS: SeasonKey[] = ["twilight", "mists", "embers", "gloom"];
+const WEATHERS: WeatherKey[] = [
+  "clear", "rain", "storm", "snow", "fog", "ashfall", "crystalstorm",
+];
+// map the old Gregorian-style seasons onto the Scarred Lands ones
+const LEGACY_SEASON: Record<string, SeasonKey> = {
+  spring: "mists",
+  summer: "embers",
+  autumn: "gloom",
+  winter: "twilight",
+};
+
+/** Coerce a saved party onto the current season/weather vocabulary. */
+function normalizeParty(p: Partial<Party> | undefined): Party {
+  const season =
+    p && SEASONS.includes(p.season as SeasonKey)
+      ? (p.season as SeasonKey)
+      : LEGACY_SEASON[p?.season as string] ?? "embers";
+  const weather =
+    p && WEATHERS.includes(p.weather as WeatherKey)
+      ? (p.weather as WeatherKey)
+      : "clear";
+  return {
+    speed: p?.speed ?? "foot",
+    march: p?.march ?? false,
+    season,
+    weather,
+  };
+}
 import type { HexState } from "./useStore";
 
 const SLOTS_KEY = "hexwright.saves.v1";
@@ -71,7 +108,7 @@ export function deserialize(file: SaveFile): Partial<HexState> {
     realmNames: file.realmNames || {},
     world,
     objects,
-    party: file.party,
+    party: normalizeParty(file.party),
     day: file.day,
     journal: file.journal || [],
     revealed: new Set<number>(file.revealed || []),

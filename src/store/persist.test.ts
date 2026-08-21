@@ -27,7 +27,7 @@ function makeState(): HexState {
     paint: { 0: "mountains" },
     objects,
     realmNames: { 0: "Renamed Realm" },
-    party: { speed: "mounted", march: true, season: "autumn", weather: "rain" },
+    party: { speed: "mounted", march: true, season: "gloom", weather: "rain" },
     day: 128,
     journal: [{ when: "x", text: "y", note: "z", tone: "#5f8a72" }],
     revealed: new Set<number>([1, 2, 3]),
@@ -60,5 +60,14 @@ describe("persist round-trip", () => {
     const file = serialize(makeState());
     expect(Array.isArray(file.revealed)).toBe(true);
     expect(file.version).toBe(1);
+  });
+
+  it("maps a legacy Gregorian season onto the Scarred Lands calendar", () => {
+    const state = makeState();
+    const file = serialize(state);
+    // simulate an older save with pre-calendar season/weather
+    (file.party as unknown as { season: string }).season = "winter";
+    const restored = deserialize(file);
+    expect(restored.party?.season).toBe("twilight");
   });
 });

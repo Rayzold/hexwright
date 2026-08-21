@@ -22,24 +22,73 @@ import type {
   World,
 } from "./types";
 
+// --- Scarred Lands calendar (from Crystal Forge content/CalendarConfig.js) ---
+// A 336-day year: 12 months of 28 days, a 7-day week, years suffixed "AC".
 export const MONTHS = [
-  "Hammer", "Alturiak", "Ches", "Tarsakh", "Mirtul", "Kythorn",
-  "Flamerule", "Eleasis", "Eleint", "Marpenoth", "Uktar", "Nightal",
+  "Iceheart", "Frostbloom", "Stormwatch", "Cloudbreak", "Winddance", "Firethorn",
+  "Sunspark", "Starfall", "Emberfall", "Leafwilt", "Moonwhisper", "Snowshimmer",
 ];
+export const WEEKDAYS = [
+  "Moonday", "Tidesday", "Glimmerday", "Dreamday",
+  "Soothingday", "Dazzleday", "Sunburstday",
+];
+export const DAYS_PER_MONTH = 28;
+export const DAYS_PER_YEAR = DAYS_PER_MONTH * MONTHS.length; // 336
+export const YEAR_EPOCH = 1218; // absolute day 0 = 1 Iceheart, 1218 AC
+/** Campaign day 1 = 17 Firethorn, 1218 AC (the sim's START_DATE). */
+export const CAMPAIGN_START_DAY = 5 * DAYS_PER_MONTH + 16; // 156
+
+/** Which of the four weather-named seasons a month index falls in. */
+export function seasonOfMonth(monthIndex: number): SeasonKey {
+  const m = ((monthIndex % 12) + 12) % 12;
+  if (m === 0 || m === 1 || m === 11) return "twilight"; // Iceheart/Frostbloom/Snowshimmer
+  if (m >= 2 && m <= 4) return "mists"; // Stormwatch/Cloudbreak/Winddance
+  if (m >= 5 && m <= 7) return "embers"; // Firethorn/Sunspark/Starfall
+  return "gloom"; // Emberfall/Leafwilt/Moonwhisper
+}
+
+export const SEASON_LABEL: Record<SeasonKey, string> = {
+  twilight: "Season of the Twilight",
+  mists: "Season of the Mists",
+  embers: "Season of the Embers",
+  gloom: "Season of the Gloom",
+};
+
+/** Notable holidays, keyed by day-of-year (see CalendarConfig HOLIDAYS). */
+export interface Holiday {
+  doy: number;
+  name: string;
+}
+export const HOLIDAYS: Holiday[] = [
+  [0, 1, "New Dawning"], [1, 14, "Love's Embrace"], [2, 12, "Mists' Equinox"],
+  [3, 1, "The Renewal"], [3, 9, "The Ascension"], [4, 1, "Zephyr's Calling"],
+  [5, 12, "Burning Solstice"], [6, 28, "Night of the Red Nanites"],
+  [7, 15, "Doublemoon Alignment"], [8, 13, "Gloom Equinox"],
+  [8, 20, "Harvest Moon Festival"], [9, 4, "The Great Scarring"],
+  [9, 28, "Day of the Dead"], [10, 7, "Datasphere's Reach"],
+  [11, 13, "End's Solstice"], [11, 28, "New Year's Eve"],
+].map(([mi, d, name]) => ({
+  doy: (mi as number) * DAYS_PER_MONTH + ((d as number) - 1),
+  name: name as string,
+}));
 
 export const PACE: Record<SpeedKey, number> = { foot: 24, mounted: 36, ship: 48 };
+// The season names are weather-coded, so the modifiers lean into that:
+// Embers (fierce light) travels best; the Twilight cold is the harshest.
 export const SEASON_MOD: Record<SeasonKey, number> = {
-  spring: 1,
-  summer: 1.05,
-  autumn: 0.95,
-  winter: 0.78,
+  twilight: 0.78,
+  mists: 0.9,
+  embers: 1.05,
+  gloom: 0.92,
 };
 export const WEATHER_MOD: Record<WeatherKey, number> = {
   clear: 1,
   rain: 0.85,
-  storm: 0.6,
-  snow: 0.55,
   fog: 0.8,
+  ashfall: 0.7,
+  snow: 0.55,
+  storm: 0.6,
+  crystalstorm: 0.5,
 };
 
 /**
@@ -203,11 +252,44 @@ export function pace(party: Party): number {
   );
 }
 
-/** Format an absolute day as an in-world date, e.g. "14 Flamerule, 1492 DR". */
+/** Format an absolute day as an in-world date, e.g. "17 Firethorn, 1218 AC". */
 export function dateStr(day: number): string {
-  const d = ((day % 360) + 360) % 360;
-  const m = Math.floor(d / 30);
-  const dd = (d % 30) + 1;
-  const yr = 1492 + Math.floor(day / 360);
-  return dd + " " + MONTHS[m] + ", " + yr + " DR";
+  const d = ((day % DAYS_PER_YEAR) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+  const m = Math.floor(d / DAYS_PER_MONTH);
+  const dd = (d % DAYS_PER_MONTH) + 1;
+  const yr = YEAR_EPOCH + Math.floor(day / DAYS_PER_YEAR);
+  return dd + " " + MONTHS[m] + ", " + yr + " AC";
+}
+
+/** Weekday name for an absolute day. */
+export function weekdayStr(day: number): string {
+  return WEEKDAYS[((day % 7) + 7) % 7];
+}
+
+/** The season a given absolute day falls in. */
+export function seasonOfDay(day: number): SeasonKey {
+  const d = ((day % DAYS_PER_YEAR) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+  return seasonOfMonth(Math.floor(d / DAYS_PER_MONTH));
+}
+
+/** The holiday on this day, if any. */
+export function holidayOn(day: number): string | null {
+  const doy = ((day % DAYS_PER_YEAR) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+  return HOLIDAYS.find((h) => h.doy === doy)?.name ?? null;
+}
+
+/** The next holiday from this day and how many days away it is. */
+export function nextHoliday(day: number): { name: string; inDays: number } {
+  const doy = ((day % DAYS_PER_YEAR) + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+  let best: Holiday | null = null;
+  let bestGap = Infinity;
+  for (const h of HOLIDAYS) {
+    const gap = (h.doy - doy + DAYS_PER_YEAR) % DAYS_PER_YEAR;
+    if (gap > 0 && gap < bestGap) {
+      bestGap = gap;
+      best = h;
+    }
+  }
+  best = best ?? HOLIDAYS[0];
+  return { name: best.name, inDays: bestGap === Infinity ? 0 : bestGap };
 }
