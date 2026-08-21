@@ -24,6 +24,12 @@ export function Header() {
   const zoomIn = useStore((s) => s.zoomIn);
   const zoomOut = useStore((s) => s.zoomOut);
   const toggleTheme = useStore((s) => s.toggleTheme);
+  const undo = useStore((s) => s.undo);
+  const redo = useStore((s) => s.redo);
+  const canUndo = useStore((s) => s.undoStack.length > 0);
+  const canRedo = useStore((s) => s.redoStack.length > 0);
+  const toggleAtlas = useStore((s) => s.toggleAtlas);
+  const atlasOpen = useStore((s) => s.atlasOpen);
 
   return (
     <header
@@ -81,6 +87,29 @@ export function Header() {
         </button>
       </div>
 
+      <div style={{ display: "flex", gap: 4 }}>
+        <button
+          className="hx-hover-btn"
+          style={{ ...zoomBtn, opacity: canUndo ? 1 : 0.4, cursor: canUndo ? "pointer" : "default" }}
+          onClick={undo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+          aria-label="Undo"
+        >
+          ↶
+        </button>
+        <button
+          className="hx-hover-btn"
+          style={{ ...zoomBtn, opacity: canRedo ? 1 : 0.4, cursor: canRedo ? "pointer" : "default" }}
+          onClick={redo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Shift+Z)"
+          aria-label="Redo"
+        >
+          ↷
+        </button>
+      </div>
+
       <div
         style={{
           display: "flex",
@@ -89,6 +118,25 @@ export function Header() {
           marginLeft: "auto",
         }}
       >
+        <button
+          className="hx-hover-btn"
+          style={{
+            ...zoomBtn,
+            width: "auto",
+            padding: "0 12px",
+            fontSize: 9,
+            fontFamily: MONO,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            border: "1px solid " + (atlasOpen ? "#8a4a24" : "#3a3025"),
+            background: atlasOpen ? "#3a2016" : "#241f19",
+            color: atlasOpen ? "#f0c9a8" : "#cfc4b0",
+          }}
+          onClick={toggleAtlas}
+          title="Atlas — all holdings by realm"
+        >
+          Atlas
+        </button>
         <button
           className="hx-hover-btn"
           style={{ ...zoomBtn, width: "auto", padding: "0 10px", fontSize: 12 }}

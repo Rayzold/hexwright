@@ -22,9 +22,13 @@ describe("parseShareParams", () => {
   });
 
   it("ignores invalid enum values", () => {
-    const p = parseShareParams("?seed=X&size=huge&edge=lava");
+    const p = parseShareParams("?seed=X&size=gigantic&edge=lava");
     expect(p?.size).toBeUndefined();
     expect(p?.edge).toBeUndefined();
     expect(p?.seed).toBe("X");
+  });
+
+  it("accepts the huge size", () => {
+    expect(parseShareParams("?seed=X&size=huge")?.size).toBe("huge");
   });
 });

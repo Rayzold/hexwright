@@ -16,6 +16,7 @@ import type {
   ObjectType,
   Params,
   Party,
+  Road,
   RouteMode,
   Selected,
   ThemeKey,
@@ -88,6 +89,55 @@ function floodRegion(world: World, center: number): number[] {
   return out;
 }
 
+// ---------- undo/redo history ----------
+
+const HISTORY_CAP = 60;
+// module-level (non-reactive) flags so keystroke coalescing and drag detection
+// don't trigger store re-renders.
+let coalesceTag: string | null = null;
+let dragEdited = false;
+
+interface WorldSnap {
+  biome: BiomeKey[];
+  land: Uint8Array;
+  river: Uint8Array;
+  owner: Int16Array;
+  roads: Road[];
+  realms: { name: string; hexes: number }[];
+}
+
+export interface EditSnapshot {
+  paint: Record<number, BiomeKey>;
+  objects: MapObject[];
+  realmNames: Record<number, string>;
+  world: WorldSnap | null;
+}
+
+function snapshotWorld(w: World): WorldSnap {
+  return {
+    biome: w.biome.slice(),
+    land: new Uint8Array(w.land),
+    river: new Uint8Array(w.river),
+    owner: new Int16Array(w.owner),
+    roads: w.roads.map((r) => r.slice()),
+    realms: w.realms.map((r) => ({ name: r.name, hexes: r.hexes })),
+  };
+}
+
+function restoreWorld(w: World, snap: WorldSnap): void {
+  w.biome = snap.biome.slice();
+  w.land = new Uint8Array(snap.land);
+  w.river = new Uint8Array(snap.river);
+  w.owner = new Int16Array(snap.owner);
+  w.roads = snap.roads.map((r) => r.slice());
+  w.realms.forEach((r, k) => {
+    if (snap.realms[k]) {
+      r.name = snap.realms[k].name;
+      r.hexes = snap.realms[k].hexes;
+    }
+  });
+}
+
 /**
  * Paint `b` onto `cells`, mutating the world's typed arrays in place. Returns a
  * paint delta ({ [hex]: biome }) for the hexes that actually changed, or null.
@@ -140,6 +190,9 @@ export interface HexState {
   fitV: number;
   leftOpen: boolean;
   rightOpen: boolean;
+  atlasOpen: boolean;
+  undoStack: EditSnapshot[];
+  redoStack: EditSnapshot[];
 
   // --- actions ---
   build: (keepManual: boolean) => void;
@@ -163,6 +216,12 @@ export interface HexState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setPanels: (left: boolean, right: boolean) => void;
+  toggleAtlas: () => void;
+
+  pushHistory: (tag?: string) => void;
+  undo: () => void;
+  redo: () => void;
+  renameObject: (id: string, name: string) => void;
 
   setRouteMode: (m: RouteMode) => void;
   setParty: <K extends keyof Party>(k: K, v: Party[K]) => void;
@@ -222,6 +281,9 @@ export const useStore = create<HexState>((set, get) => ({
   fitV: 0,
   leftOpen: true,
   rightOpen: true,
+  atlasOpen: false,
+  undoStack: [],
+  redoStack: [],
 
   build: (keepManual) => {
     const s = get();
@@ -230,6 +292,7 @@ export const useStore = create<HexState>((set, get) => ({
       : undefined;
     // generation runs in a worker; the store updates when it resolves
     generate(s.params, keep).then(({ world, objects }) => {
+      coalesceTag = null;
       set((st) => ({
         world,
         objects,
@@ -239,6 +302,8 @@ export const useStore = create<HexState>((set, get) => ({
         paint: keepManual ? st.paint : {},
         fogV: st.fogV + 1,
         fitV: st.fitV + 1,
+        undoStack: [],
+        redoStack: [],
       }));
     });
   },
@@ -283,6 +348,83 @@ export const useStore = create<HexState>((set, get) => ({
   toggleLeft: () => set((s) => ({ leftOpen: !s.leftOpen })),
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
   setPanels: (left, right) => set({ leftOpen: left, rightOpen: right }),
+  toggleAtlas: () => set((s) => ({ atlasOpen: !s.atlasOpen })),
+
+  pushHistory: (tag) => {
+    const s = get();
+    if (!s.world) return;
+    // coalesce consecutive edits to the same field (e.g. typing a name)
+    if (tag && tag === coalesceTag) {
+      if (s.redoStack.length) set({ redoStack: [] });
+      return;
+    }
+    coalesceTag = tag ?? null;
+    const snap: EditSnapshot = {
+      paint: { ...s.paint },
+      objects: s.objects.slice(),
+      realmNames: { ...s.realmNames },
+      world: s.world ? snapshotWorld(s.world) : null,
+    };
+    set({
+      undoStack: s.undoStack.concat([snap]).slice(-HISTORY_CAP),
+      redoStack: [],
+    });
+  },
+
+  undo: () => {
+    const s = get();
+    if (!s.undoStack.length || !s.world) return;
+    const cur: EditSnapshot = {
+      paint: { ...s.paint },
+      objects: s.objects.slice(),
+      realmNames: { ...s.realmNames },
+      world: snapshotWorld(s.world),
+    };
+    const snap = s.undoStack[s.undoStack.length - 1];
+    if (snap.world) restoreWorld(s.world, snap.world);
+    coalesceTag = null;
+    set((st) => ({
+      undoStack: st.undoStack.slice(0, -1),
+      redoStack: st.redoStack.concat([cur]).slice(-HISTORY_CAP),
+      paint: { ...snap.paint },
+      objects: snap.objects.slice(),
+      realmNames: { ...snap.realmNames },
+      selected: null,
+      paintV: st.paintV + 1,
+    }));
+  },
+
+  redo: () => {
+    const s = get();
+    if (!s.redoStack.length || !s.world) return;
+    const cur: EditSnapshot = {
+      paint: { ...s.paint },
+      objects: s.objects.slice(),
+      realmNames: { ...s.realmNames },
+      world: snapshotWorld(s.world),
+    };
+    const snap = s.redoStack[s.redoStack.length - 1];
+    if (snap.world) restoreWorld(s.world, snap.world);
+    coalesceTag = null;
+    set((st) => ({
+      redoStack: st.redoStack.slice(0, -1),
+      undoStack: st.undoStack.concat([cur]).slice(-HISTORY_CAP),
+      paint: { ...snap.paint },
+      objects: snap.objects.slice(),
+      realmNames: { ...snap.realmNames },
+      selected: null,
+      paintV: st.paintV + 1,
+    }));
+  },
+
+  renameObject: (id, name) => {
+    get().pushHistory("obj:" + id + ":name");
+    set((s) => ({
+      objects: s.objects.map((o) =>
+        o.id === id ? { ...o, name, gen: false } : o
+      ),
+    }));
+  },
 
   setRouteMode: (m) => set({ routeMode: m }),
   setParty: (k, v) => set((s) => ({ party: { ...s.party, [k]: v } })),
@@ -360,6 +502,7 @@ export const useStore = create<HexState>((set, get) => ({
   onRealmName: (k, v) => {
     const world = get().world;
     if (!world || !world.realms[k]) return;
+    get().pushHistory("realm:" + k);
     world.realms[k].name = v;
     set((s) => ({
       realmNames: { ...s.realmNames, [k]: v },
@@ -370,6 +513,8 @@ export const useStore = create<HexState>((set, get) => ({
   patchSel: (patch) => {
     const sel = get().selected;
     if (!sel || sel.kind !== "object") return;
+    // coalesce by field so typing a name is a single undo step
+    get().pushHistory("obj:" + sel.id + ":" + Object.keys(patch).join(","));
     // Editing a generated holding promotes it to hand-placed so the edit
     // survives the next reforge.
     set((s) => ({
@@ -382,6 +527,7 @@ export const useStore = create<HexState>((set, get) => ({
   deleteSel: () => {
     const sel = get().selected;
     if (!sel || sel.kind !== "object") return;
+    get().pushHistory();
     set((s) => ({
       objects: s.objects.filter((o) => o.id !== sel.id),
       selected: null,
@@ -410,6 +556,7 @@ export const useStore = create<HexState>((set, get) => ({
     if (!world || !s.tool.startsWith("t:")) return;
     const b = s.tool.slice(2) as BiomeKey;
     if (!BIOMES[b] || world.biome[i] === b) return;
+    get().pushHistory();
     const cells = floodRegion(world, i);
     const delta = applyPaintCells(world, cells, b);
     if (delta) {
@@ -426,6 +573,9 @@ export const useStore = create<HexState>((set, get) => ({
       get().floodFill(i);
       return;
     }
+    // one history entry per paint stroke
+    get().pushHistory();
+    dragEdited = true;
     set({ drag: { kind: "brush" } });
     get().brushHex(i);
   },
@@ -444,6 +594,7 @@ export const useStore = create<HexState>((set, get) => ({
       return;
     }
     if (tool) {
+      get().pushHistory();
       const rng = mulberry(hashStr(world.seedName + i + tool));
       const isSite = tool === "ruin" || tool === "dungeon" || tool === "camp";
       const type = tool as ObjectType;
@@ -497,6 +648,11 @@ export const useStore = create<HexState>((set, get) => ({
         return;
       }
       if (drag.kind === "obj") {
+        // capture one history entry on the first move of the drag
+        if (!dragEdited) {
+          get().pushHistory();
+          dragEdited = true;
+        }
         // moving a holding also promotes a generated one to hand-placed
         set((st) => ({
           objects: st.objects.map((o) =>
@@ -515,8 +671,10 @@ export const useStore = create<HexState>((set, get) => ({
   },
 
   objectDown: (id) => {
-    if (get().mode === "forge")
+    if (get().mode === "forge") {
+      dragEdited = false; // history is captured on the first actual move
       set({ drag: { kind: "obj", id }, selected: { kind: "object", id }, tool: "" });
+    }
   },
 
   waypointDown: (n) => set({ drag: { kind: "wp", n } }),

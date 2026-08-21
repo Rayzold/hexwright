@@ -21,6 +21,7 @@ export const SIZES: Record<SizeKey, [number, number]> = {
   small: [30, 22],
   medium: [46, 32],
   large: [70, 50],
+  huge: [100, 72],
 };
 
 export interface KeepEdits {
@@ -351,8 +352,14 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
   }
 
   // --- concat hand-placed objects (survive reforging) ---
+  // A generated holding that was edited is promoted to gen:false and kept here;
+  // drop the freshly regenerated one with the same (deterministic) id so the
+  // edited version replaces it rather than duplicating it.
   const manual = keep ? keep.objects.filter((o) => !o.gen && o.hex < n) : [];
-  const objects = generated.concat(manual);
+  const manualIds = new Set(manual.map((o) => o.id));
+  const objects = generated
+    .filter((g) => !manualIds.has(g.id))
+    .concat(manual);
 
   // --- roads (hoisted out of the paint pass; always on-foot pathing) ---
   const world: World = {

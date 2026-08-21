@@ -17,7 +17,7 @@ export type BiomeKey =
   | "mountains"
   | "snow";
 
-export type SizeKey = "small" | "medium" | "large";
+export type SizeKey = "small" | "medium" | "large" | "huge";
 export type EdgeKey = "sea" | "open";
 export type ThemeKey = "parchment" | "dusk";
 export type ViewKey = "gm" | "players";

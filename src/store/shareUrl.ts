@@ -33,7 +33,7 @@ export function parseShareParams(search: string): Partial<Params> | null {
   const seed = q.get("seed");
   if (seed) out.seed = seed;
   const size = q.get("size");
-  if (size === "small" || size === "medium" || size === "large")
+  if (size === "small" || size === "medium" || size === "large" || size === "huge")
     out.size = size as SizeKey;
   const edge = q.get("edge");
   if (edge === "sea" || edge === "open") out.edge = edge as EdgeKey;

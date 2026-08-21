@@ -50,7 +50,13 @@ export function deserialize(file: SaveFile): Partial<HexState> {
   };
   const { world } = buildWorld(file.params, keep);
   // Override with the saved objects so edits to generated holdings survive.
-  const objects = file.objects || [];
+  // Dedupe by id defensively (older saves may carry a duplicate).
+  const seen = new Set<string>();
+  const objects = (file.objects || []).filter((o) => {
+    if (seen.has(o.id)) return false;
+    seen.add(o.id);
+    return true;
+  });
   world.roads = computeRoads(world, objects);
   world.hexMiles = file.params.hexMiles;
   return {
@@ -69,6 +75,8 @@ export function deserialize(file: SaveFile): Partial<HexState> {
     waypoints: [],
     hover: null,
     drag: null,
+    undoStack: [],
+    redoStack: [],
   };
 }
 

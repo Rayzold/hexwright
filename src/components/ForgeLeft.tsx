@@ -105,6 +105,7 @@ export function ForgeLeft() {
         <option value="small">Region — 30 × 22</option>
         <option value="medium">Kingdom — 46 × 32</option>
         <option value="large">Continent — 70 × 50</option>
+        <option value="huge">Expanse — 100 × 72</option>
       </select>
 
       <label style={fieldLabel}>Edge of the map</label>

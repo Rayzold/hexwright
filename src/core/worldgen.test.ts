@@ -28,6 +28,11 @@ describe("buildWorld", () => {
     expect(Array.from(a.world.land)).toEqual(Array.from(b.world.land));
   });
 
+  it("supports the huge extent", () => {
+    const { world } = buildWorld({ ...PARAMS, size: "huge" });
+    expect(world.n).toBe(100 * 72);
+  });
+
   it("produces a plausible world", () => {
     const { world, objects } = buildWorld(PARAMS);
     expect(world.n).toBe(30 * 22);
@@ -72,6 +77,25 @@ describe("buildWorld", () => {
     expect(second.objects.some((o) => o.id === "m1")).toBe(true);
     // generated objects are not duplicated by the reforge
     expect(second.objects.filter((o) => o.id === "m1")).toHaveLength(1);
+  });
+
+  it("an edited generated holding replaces (not duplicates) its reforged self", () => {
+    const first = buildWorld(PARAMS);
+    const gen = first.objects.find((o) => o.gen)!;
+    // promote it to hand-placed with a new name, as the store does on edit
+    const promoted = { ...gen, gen: false, name: "Edited Holding" };
+    const kept = first.objects.map((o) => (o.id === gen.id ? promoted : o));
+    const second = buildWorld(PARAMS, {
+      paint: {},
+      realmNames: {},
+      objects: kept,
+    });
+    const matches = second.objects.filter((o) => o.id === gen.id);
+    expect(matches).toHaveLength(1);
+    expect(matches[0].name).toBe("Edited Holding");
+    // no duplicate ids anywhere
+    const ids = second.objects.map((o) => o.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("recomputeRealms reproduces the generated territory", () => {

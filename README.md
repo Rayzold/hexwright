@@ -67,3 +67,24 @@ the port:
 
 The Forgotten Realms month names are carried over from the prototype; swap them
 in `core/travel.ts` (`MONTHS`) for a commercial product.
+
+## Beyond the prototype
+
+Features added on top of the handoff:
+
+- **Save / load** — named world slots plus a silent autosave (localStorage), and
+  export/import of a portable `.hexwright.json` file
+- **Shareable links** — "Copy share link" encodes the generation params in the URL
+- **PNG export** of the composited map (terrain + overlay)
+- **Undo / redo** — snapshot history for terrain painting, stamps, moves, deletes,
+  and renames (`Ctrl+Z` / `Ctrl+Shift+Z`, or the header buttons)
+- **Atlas** — a drawer listing every holding grouped by realm, with editable names
+  for holdings and realms and a name filter
+- **Map extents** up to **Expanse (100 × 72 ≈ 7,200 hexes)**
+- **Pan & zoom** — drag-to-pan (middle mouse / space+drag) and cursor-anchored
+  wheel zoom
+- **Terrain brush** size (1–4 hex disk) and flood fill
+- **Parchment / dusk** theme toggle
+- **Live realm territory** — borders recompute after painting and settlement moves
+- **Collapsible side panels** (auto-collapse on narrow screens)
+- **Web Worker generation** and smoothed river curves

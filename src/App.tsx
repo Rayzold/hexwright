@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Atlas } from "./components/Atlas";
 import { ForgeLeft } from "./components/ForgeLeft";
 import { ForgeRight } from "./components/ForgeRight";
 import { Header } from "./components/Header";
@@ -128,6 +129,27 @@ export default function App() {
     };
   }, []);
 
+  // --- undo/redo keyboard shortcuts (not while editing a text field) ---
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      const k = e.key.toLowerCase();
+      if (k === "z") {
+        e.preventDefault();
+        if (e.shiftKey) useStore.getState().redo();
+        else useStore.getState().undo();
+      } else if (k === "y") {
+        e.preventDefault();
+        useStore.getState().redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <div
       style={{
@@ -172,6 +194,7 @@ export default function App() {
           </aside>
         )}
       </div>
+      <Atlas />
     </div>
   );
 }
