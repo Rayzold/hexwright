@@ -6,7 +6,7 @@ describe("New Grandia premade", () => {
   const save = buildNewGrandiaSave();
 
   it("paints every hex of the 70x50 map", () => {
-    expect(Object.keys(save.paint)).toHaveLength(70 * 50);
+    expect(Object.keys(save.paint)).toHaveLength(100 * 72);
     // the Scar band exists down column 3
     const has = (biome: string) => Object.values(save.paint).includes(biome as never);
     expect(has("scar")).toBe(true);
@@ -21,7 +21,7 @@ describe("New Grandia premade", () => {
     }
     for (const o of save.objects) {
       expect(o.hex).toBeGreaterThanOrEqual(0);
-      expect(o.hex).toBeLessThan(70 * 50);
+      expect(o.hex).toBeLessThan(100 * 72);
     }
     // ids are unique
     const ids = save.objects.map((o) => o.id);
@@ -32,7 +32,7 @@ describe("New Grandia premade", () => {
     const patch = deserialize(save);
     expect(patch.world).toBeTruthy();
     // every painted hex should survive into the world's biome array
-    for (const key of [0, 1785, 1798, 3185, 70 * 50 - 1]) {
+    for (const key of [0, 1785, 1798, 3185, 100 * 72 - 1]) {
       expect(patch.world!.biome[key]).toBe(save.paint[key]);
     }
     expect(patch.objects?.some((o) => o.name === "New Grandia")).toBe(true);
