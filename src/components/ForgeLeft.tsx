@@ -1,3 +1,4 @@
+import { REGION_PRESETS } from "../core/regions";
 import { useStore } from "../store/useStore";
 import {
   MONO,
@@ -75,11 +76,29 @@ export function ForgeLeft() {
   const setEdge = useStore((s) => s.setEdge);
   const reroll = useStore((s) => s.reroll);
   const regenerate = useStore((s) => s.regenerate);
+  const applyRegion = useStore((s) => s.applyRegion);
   const toggleLayer = useStore((s) => s.toggleLayer);
 
   return (
     <div>
       <div style={{ ...sectionHeader, marginBottom: 12 }}>The Forge</div>
+
+      <label style={fieldLabel}>Region preset</label>
+      <select
+        value=""
+        onChange={(e) => {
+          if (e.target.value) applyRegion(e.target.value);
+        }}
+        title="Generate a world in the image of a Scarred Lands region"
+        style={{ ...inputStyle, marginBottom: 16 }}
+      >
+        <option value="">Choose a region…</option>
+        {REGION_PRESETS.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </select>
 
       <label style={fieldLabel}>Seed word</label>
       <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>

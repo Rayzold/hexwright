@@ -3,6 +3,7 @@ import { BIOMES } from "../core/biomes";
 import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
 import { OBJECT_TYPES, hostileThreatMap } from "../core/objectTypes";
+import { regionById } from "../core/regions";
 import { hashStr, mulberry } from "../core/rng";
 import {
   CAMPAIGN_START_DAY,
@@ -210,6 +211,7 @@ export interface HexState {
   setEdge: (v: Params["edge"]) => void;
   reroll: () => void;
   regenerate: () => void;
+  applyRegion: (id: string) => void;
 
   setMode: (m: Mode) => void;
   setView: (v: ViewKey) => void;
@@ -341,6 +343,13 @@ export const useStore = create<HexState>((set, get) => ({
   },
 
   regenerate: () => get().build(true),
+
+  applyRegion: (id) => {
+    const preset = regionById(id);
+    if (!preset) return;
+    set((s) => ({ params: { ...s.params, ...preset.params } }));
+    get().build(false); // fresh world in the region's image
+  },
 
   setMode: (m) => set(m === "table" ? { mode: m, tool: "" } : { mode: m }),
   setView: (v) => set({ view: v }),

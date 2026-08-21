@@ -113,3 +113,6 @@ sim config (no DM-secret material):
 - **The Scar** — a paintable blighted/arcane land biome
 - **Airship travel** — a pace that flies over all terrain and water at flat cost
 - **Naming** — a Scarred Lands place/realm/site name style (toggle to Classic)
+- **Region presets** — generate a world in the image of any of the 14 regions
+  (New Grandia, Thundermount, The Scar, The Bog, The Celestial Volcano, …), each
+  biasing the flavour sliders and naming the world for the region
