@@ -20,6 +20,7 @@ interface Mark {
   x: number;
   y: number;
   shape: "circle" | "square" | "poly";
+  settlement: boolean;
   r: number;
   rInner: number;
   poly?: string;
@@ -62,6 +63,7 @@ function buildMarks(
       x,
       y,
       shape: meta.shape,
+      settlement: !isSite,
       r: meta.r,
       rInner: meta.inner,
       poly: meta.shape === "square" ? squarePts(meta.r) : meta.poly,
@@ -105,12 +107,14 @@ export function MapStage() {
   const routeMode = useStore((s) => s.routeMode);
   const party = useStore((s) => s.party);
   const mode = useStore((s) => s.mode);
+  const partyHex = useStore((s) => s.partyHex);
+  const trail = useStore((s) => s.trail);
 
   // --- canvas paint ---
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv || !world) return;
-    const opts: PaintOpts = { theme, view, layers, revealed, fogV, paintV };
+    const opts: PaintOpts = { theme, view, layers, revealed, fogV, paintV, weather: party.weather };
     keyRef.current = paintCanvas(cv, world, opts, keyRef.current);
     if (svgRef.current) {
       setMapRefs({
@@ -121,7 +125,7 @@ export function MapStage() {
         seed: world.seedName,
       });
     }
-  }, [world, theme, view, layers, revealed, fogV, paintV]);
+  }, [world, theme, view, layers, revealed, fogV, paintV, party.weather]);
 
   useEffect(() => clearMapRefs, []);
 
@@ -273,11 +277,12 @@ export function MapStage() {
       waypoints,
       routeMode,
       party.speed,
-      hostileThreatMap(objects)
+      hostileThreatMap(objects),
+      party.weather
     );
     // paintV included so brush edits recost the route
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world, waypoints, routeMode, party.speed, paintV, world?.hexMiles, objects]);
+  }, [world, waypoints, routeMode, party.speed, party.weather, paintV, world?.hexMiles, objects]);
 
   const marks = useMemo(() => {
     if (!world) return [];
@@ -356,6 +361,18 @@ export function MapStage() {
 
   const scaleBarW = (S * SQ3 * 5 * zoom).toFixed(0);
 
+  const trailPoints =
+    trail && trail.length > 1
+      ? trail
+          .map((i) => {
+            const [x, y] = center(i, world.w);
+            return x.toFixed(1) + "," + y.toFixed(1);
+          })
+          .join(" ")
+      : "";
+  const partyPos =
+    partyHex !== null && partyHex < world.n ? center(partyHex, world.w) : null;
+
   return (
     <main
       ref={stageRef}
@@ -401,6 +418,18 @@ export function MapStage() {
           }}
           onMouseUp={() => useStore.getState().endDrag()}
         >
+          {trailPoints && (
+            <polyline
+              points={trailPoints}
+              fill="none"
+              stroke="#8a7f6c"
+              strokeWidth={1.8}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              strokeDasharray="1.5 3.5"
+              opacity={0.6}
+            />
+          )}
           <polyline
             points={routePoints}
             fill="none"
@@ -479,13 +508,11 @@ export function MapStage() {
                   <circle r={m.r} fill={m.fill} stroke={m.stroke} strokeWidth={1.1} />
                   <circle r={m.rInner} fill={m.stroke} />
                 </>
-              ) : m.shape === "square" ? (
+              ) : (
                 <>
                   <polygon points={m.poly} fill={m.fill} stroke={m.stroke} strokeWidth={1.1} />
-                  <circle r={m.rInner} fill={m.stroke} />
+                  {m.settlement && <circle r={m.rInner} fill={m.stroke} />}
                 </>
-              ) : (
-                <polygon points={m.poly} fill={m.fill} stroke={m.stroke} strokeWidth={1.1} />
               )}
               {m.label && (
                 <text
@@ -507,6 +534,17 @@ export function MapStage() {
               )}
             </g>
           ))}
+
+          {partyPos && (
+            <g
+              transform={`translate(${partyPos[0].toFixed(1)},${partyPos[1].toFixed(1)})`}
+              style={{ pointerEvents: "none" }}
+            >
+              <circle r={8} fill="#16120e" opacity={0.5} />
+              <circle r={5.6} fill={ACCENT} stroke="#fdf3e2" strokeWidth={1.8} />
+              <circle r={2} fill="#fdf3e2" />
+            </g>
+          )}
 
           {selPoints && (
             <polygon points={selPoints} fill="none" stroke={ACCENT} strokeWidth={1.8} />

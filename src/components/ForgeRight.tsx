@@ -60,7 +60,11 @@ export function ForgeRight() {
   const patchSel = useStore((s) => s.patchSel);
   const deleteSel = useStore((s) => s.deleteSel);
   const onRealmName = useStore((s) => s.onRealmName);
+  const addRealm = useStore((s) => s.addRealm);
+  const recolorRealm = useStore((s) => s.recolorRealm);
+  const pickRealmBrush = useStore((s) => s.pickRealmBrush);
   useStore((s) => s.paintV); // re-render when terrain painted
+  useStore((s) => s.realmV); // re-render when realms edited
 
   const brushHint = tool.startsWith("t:")
     ? "Painting " +
@@ -426,45 +430,107 @@ export function ForgeRight() {
       )}
 
       <div style={{ ...hairline, margin: "20px 0 14px" }} />
-      <div style={sectionHeader}>Gazetteer</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {world?.realms.map((r, k) => (
-          <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <span
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: 2,
-                flex: "0 0 auto",
-                background: r.color,
-              }}
-            />
-            <input
-              className="hx-realm-name"
-              type="text"
-              value={r.name}
-              onChange={(e) => onRealmName(k, e.target.value)}
-              style={{
-                flex: "1 1 auto",
-                minWidth: 0,
-                background: "transparent",
-                border: "none",
-                borderBottom: "1px solid #2b241c",
-                color: "#d6cab4",
-                fontFamily: SERIF,
-                fontSize: 15,
-                padding: "3px 0",
-              }}
-            />
-            <span
-              style={{ fontFamily: MONO, fontSize: 10, color: "#7d7361", flex: "0 0 auto" }}
-            >
-              {r.hexes} hex · {r.seat}
-            </span>
-          </div>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <span style={sectionHeader as React.CSSProperties}>Realms</span>
+        <button
+          onClick={() => pickRealmBrush(-1)}
+          title="Erase realm ownership"
+          style={{
+            marginLeft: "auto",
+            padding: "4px 8px",
+            borderRadius: 3,
+            cursor: "pointer",
+            fontSize: 10,
+            border: "1px solid " + (tool === "r:-1" ? "#8a4a24" : "#3a3025"),
+            background: tool === "r:-1" ? "#3a2016" : "#241f19",
+            color: tool === "r:-1" ? "#f0c9a8" : "#cfc4b0",
+          }}
+        >
+          Erase
+        </button>
+        <button
+          onClick={addRealm}
+          style={{
+            padding: "4px 8px",
+            borderRadius: 3,
+            cursor: "pointer",
+            fontSize: 10,
+            border: "1px solid #3a3025",
+            background: "#241f19",
+            color: "#cfc4b0",
+          }}
+        >
+          + Realm
+        </button>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: "#6f6656", marginTop: 14, lineHeight: 1.6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {world?.realms.map((r, k) => {
+          const active = tool === "r:" + r.id;
+          return (
+            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="color"
+                value={r.color}
+                onChange={(e) => recolorRealm(r.id, e.target.value)}
+                title="Realm colour"
+                style={{
+                  width: 16,
+                  height: 16,
+                  padding: 0,
+                  border: "none",
+                  background: "none",
+                  flex: "0 0 auto",
+                  cursor: "pointer",
+                }}
+              />
+              <input
+                className="hx-realm-name"
+                type="text"
+                value={r.name}
+                onChange={(e) => onRealmName(k, e.target.value)}
+                style={{
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: "1px solid #2b241c",
+                  color: "#d6cab4",
+                  fontFamily: SERIF,
+                  fontSize: 15,
+                  padding: "3px 0",
+                }}
+              />
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#7d7361", flex: "0 0 auto" }}>
+                {r.hexes}
+              </span>
+              <button
+                onClick={() => pickRealmBrush(r.id)}
+                title="Paint this realm onto the map"
+                style={{
+                  flex: "0 0 auto",
+                  padding: "3px 8px",
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  fontSize: 10,
+                  border: "1px solid " + (active ? "#8a4a24" : "#3a3025"),
+                  background: active ? "#3a2016" : "#241f19",
+                  color: active ? "#f0c9a8" : "#cfc4b0",
+                }}
+              >
+                Paint
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 10, color: "#6f6656", marginTop: 8, lineHeight: 1.5 }}>
+        {tool.startsWith("r:")
+          ? tool === "r:-1"
+            ? "Erasing realm claims. Click or drag the map; brush size applies."
+            : "Painting a realm. Click or drag the map to claim hexes."
+          : "Add realms, recolor them, and Paint to claim hexes; borders follow."}
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 10, color: "#6f6656", marginTop: 10, lineHeight: 1.6 }}>
         {tally()}
       </div>
     </div>

@@ -45,13 +45,19 @@ export type ObjectType =
   | "keep"
   | "fort"
   | "tower"
+  | "citadel"
+  | "harbor"
   | "ruin"
   | "dungeon"
   | "camp"
   | "lair"
   | "shrine"
+  | "temple"
   | "cave"
-  | "monument";
+  | "mine"
+  | "portal"
+  | "monument"
+  | "wonder";
 
 /** Where a holding or site stands relative to the party. */
 export type Allegiance = "friendly" | "neutral" | "hostile";
@@ -177,4 +183,12 @@ export interface SaveFile {
   revealed: number[];
   layers: Layers;
   theme: ThemeKey;
+  /** where the party currently stands (hex index), or null before any march. */
+  partyHex?: number | null;
+  /** breadcrumb of hexes the party has marched through. */
+  trail?: number[];
+  /** hand-authored realm registry (overrides the generated one when present). */
+  realms?: Realm[];
+  /** hand-painted realm ownership: hex index -> realm id. */
+  realmPaint?: Record<number, number>;
 }

@@ -84,6 +84,18 @@ describe("airship travel", () => {
   });
 });
 
+describe("stormglass passage", () => {
+  it("a crystal storm makes Scar cells traversable", () => {
+    const { world } = buildWorld(PARAMS);
+    // force a scar cell
+    world.biome[10] = "scar";
+    world.land[10] = 1;
+    world.river[10] = 0;
+    expect(cellCost(world, 10, "foot")).toBe(3);
+    expect(cellCost(world, 10, "foot", "crystalstorm")).toBe(1.8);
+  });
+});
+
 describe("weather", () => {
   it("rolls only weather within the season's table", () => {
     const rng = (() => {

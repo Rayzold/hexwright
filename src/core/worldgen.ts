@@ -508,6 +508,35 @@ export function recomputeRealms(world: World): void {
   floodRealms(world.w, world.h, world.land, world.biome, world.owner, world.realms);
 }
 
+/** Colour palette for hand-authored realms. */
+export const REALM_PALETTE = [
+  "#a35a34", "#4b6d7a", "#6a6a3c", "#7a4a63", "#3f6b56", "#8a6a3a",
+  "#5b5b8a", "#7a4a3a", "#4a7a5a", "#8a5a70", "#5a7a4a", "#7a6a4a",
+];
+
+/**
+ * Apply hand-painted realm ownership to the live world. When `realms` is given
+ * it replaces the realm registry; then `owner` is rebuilt from `realmPaint`
+ * (hex -> realm id) and each realm's hex count is recomputed.
+ */
+export function applyRealmPaint(
+  world: World,
+  realmPaint: Record<number, number>,
+  realms?: Realm[]
+): void {
+  if (realms && realms.length) world.realms = realms.map((r) => ({ ...r }));
+  world.owner.fill(-1);
+  for (const k in realmPaint) {
+    const i = +k;
+    if (i >= 0 && i < world.n) world.owner[i] = realmPaint[k];
+  }
+  for (const r of world.realms) r.hexes = 0;
+  for (let i = 0; i < world.n; i++) {
+    const o = world.owner[i];
+    if (o >= 0 && world.realms[o]) world.realms[o].hexes++;
+  }
+}
+
 /**
  * Connect each settlement to its two nearest neighbours within 18 hexes by
  * on-foot A*, skipping paths longer than 46 hexes and de-duplicating pairs.

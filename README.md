@@ -117,5 +117,15 @@ sim config (no DM-secret material):
   (New Grandia, Thundermount, The Scar, The Bog, The Celestial Volcano, …), each
   biasing the flavour sliders and naming the world for the region
 - **Premade worlds** — the hand-authored **New Grandia** campaign map (a 5×5 grid
-  of regions with the Scar running down the centre and all the named holdings),
+  of regions with the Scar as a central oval and all the named holdings),
   loadable from the Worlds menu
+- **More map icons** — Citadel, Harbor, Temple, Mine, Portal, Wonder, on top of
+  the earlier set
+- **Paintable realms** — a realm brush to claim hexes for named nations with
+  their own colors; hand-authored borders that persist and survive terrain edits
+- **Encounter roller** — per-biome, setting-flavored random-encounter tables; roll
+  an actual result into the log for the party's ground
+- **Party token + trail** — a "party is here" marker and a breadcrumb of past
+  marches
+- **Stormglass Passage** — a Crystal storm opens a traversable (and perilous)
+  passage through the Scar, lit on the map

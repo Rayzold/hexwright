@@ -3,6 +3,7 @@ import { BIOMES } from "../core/biomes";
 import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
 import { OBJECT_TYPES, hostileThreatMap } from "../core/objectTypes";
+import { rollEncounter } from "../core/encounters";
 import { regionById } from "../core/regions";
 import { hashStr, mulberry } from "../core/rng";
 import {
@@ -12,7 +13,12 @@ import {
   rollWeather as rollWeatherFor,
   route,
 } from "../core/travel";
-import { computeRoads, recomputeRealms } from "../core/worldgen";
+import {
+  REALM_PALETTE,
+  applyRealmPaint,
+  computeRoads,
+  recomputeRealms,
+} from "../core/worldgen";
 import { generate } from "../workers/gen";
 import type {
   BiomeKey,
@@ -113,13 +119,14 @@ interface WorldSnap {
   river: Uint8Array;
   owner: Int16Array;
   roads: Road[];
-  realms: { name: string; hexes: number }[];
+  realms: { name: string; color: string; hexes: number }[];
 }
 
 export interface EditSnapshot {
   paint: Record<number, BiomeKey>;
   objects: MapObject[];
   realmNames: Record<number, string>;
+  realmPaint: Record<number, number>;
   world: WorldSnap | null;
 }
 
@@ -130,7 +137,7 @@ function snapshotWorld(w: World): WorldSnap {
     river: new Uint8Array(w.river),
     owner: new Int16Array(w.owner),
     roads: w.roads.map((r) => r.slice()),
-    realms: w.realms.map((r) => ({ name: r.name, hexes: r.hexes })),
+    realms: w.realms.map((r) => ({ name: r.name, color: r.color, hexes: r.hexes })),
   };
 }
 
@@ -143,6 +150,7 @@ function restoreWorld(w: World, snap: WorldSnap): void {
   w.realms.forEach((r, k) => {
     if (snap.realms[k]) {
       r.name = snap.realms[k].name;
+      r.color = snap.realms[k].color;
       r.hexes = snap.realms[k].hexes;
     }
   });
@@ -180,6 +188,10 @@ export interface HexState {
   paint: Record<number, BiomeKey>;
   paintV: number;
   realmNames: Record<number, string>;
+  /** hand-painted realm ownership: hex -> realm id. */
+  realmPaint: Record<number, number>;
+  /** bumped on any realm edit so autosave and repaint pick it up. */
+  realmV: number;
   world: World | null;
   objects: MapObject[];
   selected: Selected;
@@ -193,6 +205,8 @@ export interface HexState {
   journal: JournalEntry[];
   revealed: Set<number> | null;
   fogV: number;
+  partyHex: number | null;
+  trail: number[];
   zoom: number;
   hover: number | null;
   drag: Drag;
@@ -240,11 +254,17 @@ export interface HexState {
   rollWeather: () => void;
   clearRoute: () => void;
   popWaypoint: () => void;
+  setPartyHex: (i: number) => void;
+  clearTrail: () => void;
+  rollEncounter: () => void;
   revealAll: () => void;
   hideAll: () => void;
   march: () => void;
 
   onRealmName: (k: number, v: string) => void;
+  addRealm: () => void;
+  recolorRealm: (id: number, color: string) => void;
+  pickRealmBrush: (id: number) => void;
   patchSel: (patch: Partial<MapObject>) => void;
   patchObject: (id: string, patch: Partial<MapObject>, tag?: string) => void;
   deleteObject: (id: string) => void;
@@ -276,6 +296,8 @@ export const useStore = create<HexState>((set, get) => ({
   paint: {},
   paintV: 0,
   realmNames: {},
+  realmPaint: {},
+  realmV: 0,
   world: null,
   objects: [],
   selected: null,
@@ -289,6 +311,8 @@ export const useStore = create<HexState>((set, get) => ({
   journal: [],
   revealed: null,
   fogV: 0,
+  partyHex: null,
+  trail: [],
   zoom: 1,
   hover: null,
   drag: null,
@@ -318,6 +342,10 @@ export const useStore = create<HexState>((set, get) => ({
         fitV: st.fitV + 1,
         undoStack: [],
         redoStack: [],
+        partyHex: null,
+        trail: [],
+        realmPaint: {},
+        realmV: st.realmV + 1,
       }));
     });
   },
@@ -384,6 +412,7 @@ export const useStore = create<HexState>((set, get) => ({
       paint: { ...s.paint },
       objects: s.objects.slice(),
       realmNames: { ...s.realmNames },
+      realmPaint: { ...s.realmPaint },
       world: s.world ? snapshotWorld(s.world) : null,
     };
     set({
@@ -399,6 +428,7 @@ export const useStore = create<HexState>((set, get) => ({
       paint: { ...s.paint },
       objects: s.objects.slice(),
       realmNames: { ...s.realmNames },
+      realmPaint: { ...s.realmPaint },
       world: snapshotWorld(s.world),
     };
     const snap = s.undoStack[s.undoStack.length - 1];
@@ -410,8 +440,10 @@ export const useStore = create<HexState>((set, get) => ({
       paint: { ...snap.paint },
       objects: snap.objects.slice(),
       realmNames: { ...snap.realmNames },
+      realmPaint: { ...snap.realmPaint },
       selected: null,
       paintV: st.paintV + 1,
+      realmV: st.realmV + 1,
     }));
   },
 
@@ -422,6 +454,7 @@ export const useStore = create<HexState>((set, get) => ({
       paint: { ...s.paint },
       objects: s.objects.slice(),
       realmNames: { ...s.realmNames },
+      realmPaint: { ...s.realmPaint },
       world: snapshotWorld(s.world),
     };
     const snap = s.redoStack[s.redoStack.length - 1];
@@ -433,8 +466,10 @@ export const useStore = create<HexState>((set, get) => ({
       paint: { ...snap.paint },
       objects: snap.objects.slice(),
       realmNames: { ...snap.realmNames },
+      realmPaint: { ...snap.realmPaint },
       selected: null,
       paintV: st.paintV + 1,
+      realmV: st.realmV + 1,
     }));
   },
 
@@ -451,6 +486,29 @@ export const useStore = create<HexState>((set, get) => ({
     })),
   clearRoute: () => set({ waypoints: [] }),
   popWaypoint: () => set((s) => ({ waypoints: s.waypoints.slice(0, -1) })),
+  setPartyHex: (i) => set((s) => ({ partyHex: i, trail: s.trail.concat([i]).slice(-800) })),
+  clearTrail: () => set({ trail: [], partyHex: null }),
+
+  rollEncounter: () => {
+    const s = get();
+    const world = s.world;
+    if (!world) return;
+    // roll for the party's hex, else the last waypoint, else the first
+    let hex = s.partyHex;
+    if (hex == null || hex >= world.n) {
+      hex = s.waypoints[s.waypoints.length - 1] ?? s.waypoints[0] ?? null;
+    }
+    if (hex == null || hex >= world.n) return;
+    const biome = world.biome[hex];
+    const result = rollEncounter(biome, Math.random);
+    const entry: JournalEntry = {
+      when: dateStr(s.day),
+      text: "Encounter — " + BIOMES[biome].name + ":",
+      note: result,
+      tone: "#c05a2b",
+    };
+    set((st) => ({ journal: [entry].concat(st.journal).slice(0, 24) }));
+  },
 
   revealAll: () => {
     const w = get().world;
@@ -470,7 +528,8 @@ export const useStore = create<HexState>((set, get) => ({
       s.waypoints,
       s.routeMode,
       s.party.speed,
-      hostileThreatMap(s.objects)
+      hostileThreatMap(s.objects),
+      s.party.weather
     );
     if (!r || !r.cells) return;
     const days = (r.cost as number) / pace(s.party);
@@ -516,13 +575,22 @@ export const useStore = create<HexState>((set, get) => ({
         : "The road was quiet." + (march ? " Party arrives exhausted." : ""),
       tone: hits ? "#b06a4a" : "#5f8a72",
     };
-    set((st) => ({
-      day: st.day + whole,
-      revealed: rev,
-      fogV: st.fogV + 1,
-      journal: [entry].concat(st.journal).slice(0, 24),
-      waypoints: [r.cells![r.cells!.length - 1]],
-    }));
+    const dest = r.cells[r.cells.length - 1];
+    // extend the breadcrumb trail with the cells just walked
+    const cells = r.cells;
+    set((st) => {
+      const trail = st.trail.slice();
+      for (const c of cells) if (trail[trail.length - 1] !== c) trail.push(c);
+      return {
+        day: st.day + whole,
+        revealed: rev,
+        fogV: st.fogV + 1,
+        journal: [entry].concat(st.journal).slice(0, 24),
+        waypoints: [dest],
+        partyHex: dest,
+        trail: trail.slice(-800),
+      };
+    });
   },
 
   onRealmName: (k, v) => {
@@ -533,7 +601,39 @@ export const useStore = create<HexState>((set, get) => ({
     set((s) => ({
       realmNames: { ...s.realmNames, [k]: v },
       paintV: s.paintV + 1,
+      realmV: s.realmV + 1,
     }));
+  },
+
+  addRealm: () => {
+    const world = get().world;
+    if (!world) return;
+    const id = world.realms.length;
+    world.realms.push({
+      id,
+      name: "New Realm " + (id + 1),
+      color: REALM_PALETTE[id % REALM_PALETTE.length],
+      seat: "—",
+      seatHex: -1,
+      hexes: 0,
+    });
+    set((s) => ({
+      tool: "r:" + id,
+      layers: { ...s.layers, borders: true },
+      realmV: s.realmV + 1,
+      paintV: s.paintV + 1,
+    }));
+  },
+
+  recolorRealm: (id, color) => {
+    const world = get().world;
+    if (!world || !world.realms[id]) return;
+    world.realms[id].color = color;
+    set((s) => ({ realmV: s.realmV + 1, paintV: s.paintV + 1 }));
+  },
+
+  pickRealmBrush: (id) => {
+    set((s) => ({ tool: "r:" + id, layers: { ...s.layers, borders: true } }));
   },
 
   patchSel: (patch) => {
@@ -582,7 +682,34 @@ export const useStore = create<HexState>((set, get) => ({
   brushHex: (i) => {
     const s = get();
     const world = s.world;
-    if (!world || !s.tool.startsWith("t:")) return;
+    if (!world) return;
+    if (s.tool.startsWith("r:")) {
+      // realm brush: assign the hexes in range to the active realm (or erase)
+      const id = parseInt(s.tool.slice(2), 10);
+      const cells = hexRegion(world, i, s.brushSize);
+      const rp = { ...s.realmPaint };
+      let changed = false;
+      for (const c of cells) {
+        if (id < 0) {
+          if (world.owner[c] !== -1) changed = true;
+          world.owner[c] = -1;
+          delete rp[c];
+        } else if (world.realms[id]) {
+          if (world.owner[c] !== id) changed = true;
+          world.owner[c] = id;
+          rp[c] = id;
+        }
+      }
+      if (!changed) return;
+      for (const r of world.realms) r.hexes = 0;
+      for (let k = 0; k < world.n; k++) {
+        const o = world.owner[k];
+        if (o >= 0 && world.realms[o]) world.realms[o].hexes++;
+      }
+      set((st) => ({ realmPaint: rp, paintV: st.paintV + 1, realmV: st.realmV + 1 }));
+      return;
+    }
+    if (!s.tool.startsWith("t:")) return;
     const b = s.tool.slice(2) as BiomeKey;
     if (!BIOMES[b]) return;
     const cells = hexRegion(world, i, s.brushSize);
@@ -608,7 +735,15 @@ export const useStore = create<HexState>((set, get) => ({
 
   beginBrush: (i) => {
     const s = get();
-    if (s.mode !== "forge" || !s.tool.startsWith("t:")) return;
+    if (s.mode !== "forge") return;
+    if (s.tool.startsWith("r:")) {
+      get().pushHistory();
+      dragEdited = true;
+      set({ drag: { kind: "brush" } });
+      get().brushHex(i);
+      return;
+    }
+    if (!s.tool.startsWith("t:")) return;
     if (s.fill) {
       // flood is click-only; don't start a paint drag
       get().floodFill(i);
@@ -630,7 +765,7 @@ export const useStore = create<HexState>((set, get) => ({
       return;
     }
     const tool = s.tool;
-    if (tool.startsWith("t:")) {
+    if (tool.startsWith("t:") || tool.startsWith("r:")) {
       // beginBrush already handled the paint/flood on mousedown
       return;
     }
@@ -754,7 +889,10 @@ export const useStore = create<HexState>((set, get) => ({
   refreshRealms: () => {
     const s = get();
     if (!s.world) return;
-    recomputeRealms(s.world);
+    // once realms are hand-painted, reassert them instead of flood-filling
+    if (Object.keys(s.realmPaint).length)
+      applyRealmPaint(s.world, s.realmPaint, s.world.realms);
+    else recomputeRealms(s.world);
     set((st) => ({ paintV: st.paintV + 1 }));
   },
 

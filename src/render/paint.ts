@@ -4,7 +4,14 @@
 
 import { CORNERS, center, nbrs } from "../core/hex";
 import { THEMES, biomeColor } from "../core/themes";
-import type { BiomeKey, Layers, ThemeKey, ViewKey, World } from "../core/types";
+import type {
+  BiomeKey,
+  Layers,
+  ThemeKey,
+  ViewKey,
+  WeatherKey,
+  World,
+} from "../core/types";
 
 export interface PaintOpts {
   theme: ThemeKey;
@@ -13,6 +20,7 @@ export interface PaintOpts {
   revealed: Set<number> | null;
   fogV: number;
   paintV: number;
+  weather: WeatherKey;
 }
 
 export function paintKey(world: World, o: PaintOpts): string {
@@ -29,6 +37,7 @@ export function paintKey(world: World, o: PaintOpts): string {
     o.layers.rivers,
     o.layers.roads,
     o.layers.borders,
+    o.weather === "crystalstorm" ? "stormglass" : "",
   ].join("|");
 }
 
@@ -200,6 +209,20 @@ export function paintCanvas(
       });
       g.stroke();
     }
+  }
+
+  // --- stormglass passage: a crystal storm lights the Scar ---
+  if (o.weather === "crystalstorm") {
+    g.fillStyle = "rgba(192,90,43,0.30)";
+    g.beginPath();
+    for (let i = 0; i < n; i++) {
+      if (world.biome[i] !== "scar") continue;
+      const [x, y] = center(i, w);
+      g.moveTo(x + CORNERS[0][0], y + CORNERS[0][1]);
+      for (let k = 1; k < 6; k++) g.lineTo(x + CORNERS[k][0], y + CORNERS[k][1]);
+      g.closePath();
+    }
+    g.fill();
   }
 
   // --- unsurveyed edge band ---

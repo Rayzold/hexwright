@@ -149,15 +149,19 @@ export function forecastWeather(season: SeasonKey): WeatherKey {
 export function cellCost(
   world: World,
   i: number,
-  speed: SpeedKey
+  speed: SpeedKey,
+  weather?: WeatherKey
 ): number | null {
   // Airships fly over everything at a flat cost — land, water, and mountains alike.
   if (speed === "air") return 1;
   const b = BIOMES[world.biome[i]];
   const ship = speed === "ship";
-  if (b.water) return ship ? 1 : null;
+  if (b.water) return ship ? (weather === "storm" ? 1.4 : 1) : null;
   if (ship) return null;
   let c = b.cost as number;
+  // A crystal storm carves a "stormglass passage" through the Scar — dangerous
+  // but suddenly traversable.
+  if (world.biome[i] === "scar" && weather === "crystalstorm") c = 1.8;
   if (world.river[i]) c += 0.4;
   return c;
 }
@@ -167,7 +171,8 @@ export function path(
   world: World,
   a: number,
   b: number,
-  speed: SpeedKey
+  speed: SpeedKey,
+  weather?: WeatherKey
 ): number[] | null {
   if (a === b) return [a];
   const { w, h, n } = world;
@@ -185,7 +190,7 @@ export function path(
     for (const [nc, nr] of nbrs(c, r)) {
       if (nc < 0 || nr < 0 || nc >= w || nr >= h) continue;
       const j = nr * w + nc;
-      const cost = cellCost(world, j, speed);
+      const cost = cellCost(world, j, speed, weather);
       if (cost === null) continue;
       const nd = dist[i] + cost;
       if (nd < dist[j]) {
@@ -255,14 +260,15 @@ export function route(
   waypoints: number[],
   routeMode: RouteMode,
   speed: SpeedKey,
-  threatMap?: Map<number, number>
+  threatMap?: Map<number, number>,
+  weather?: WeatherKey
 ): RouteResult | null {
   if (!world || waypoints.length < 2) return null;
   const cells: number[] = [];
   for (let k = 0; k < waypoints.length - 1; k++) {
     const seg =
       routeMode === "auto"
-        ? path(world, waypoints[k], waypoints[k + 1], speed)
+        ? path(world, waypoints[k], waypoints[k + 1], speed, weather)
         : line(world, waypoints[k], waypoints[k + 1]);
     if (!seg) return { cells: null, blocked: true };
     for (let j = k === 0 ? 0 : 1; j < seg.length; j++) cells.push(seg[j]);
@@ -273,7 +279,7 @@ export function route(
   for (let k = 1; k < cells.length; k++) {
     const i = cells[k];
     const b = world.biome[i];
-    const cc = cellCost(world, i, speed);
+    const cc = cellCost(world, i, speed, weather);
     cost += (cc === null ? 4 : cc) * world.hexMiles;
     // hostile lairs along the way raise the odds of trouble
     const threat = threatMap ? threatMap.get(i) || 0 : 0;

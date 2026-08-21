@@ -33,6 +33,7 @@ export function TableRight() {
   const paintV = useStore((s) => s.paintV);
   const objects = useStore((s) => s.objects);
   const march = useStore((s) => s.march);
+  const rollEncounter = useStore((s) => s.rollEncounter);
 
   const T = THEMES[theme];
 
@@ -43,10 +44,11 @@ export function TableRight() {
       waypoints,
       routeMode,
       party.speed,
-      hostileThreatMap(objects)
+      hostileThreatMap(objects),
+      party.weather
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world, waypoints, routeMode, party.speed, paintV, world?.hexMiles, objects]);
+  }, [world, waypoints, routeMode, party.speed, party.weather, paintV, world?.hexMiles, objects]);
 
   const hasCells = !!(r && r.cells);
   const blocked = !!(r && r.blocked);
@@ -241,6 +243,23 @@ export function TableRight() {
                 </span>
               </div>
               <div style={{ fontSize: 11, color: "#8e8471", lineHeight: 1.55 }}>{checkLabel}</div>
+              <button
+                className="hx-hover-btn"
+                onClick={rollEncounter}
+                style={{
+                  width: "100%",
+                  marginTop: 8,
+                  padding: "6px 8px",
+                  background: "#241f19",
+                  color: "#cfc4b0",
+                  border: "1px solid #3a3025",
+                  borderRadius: 3,
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Roll an encounter
+              </button>
             </div>
 
             {hasCells && party.march && (

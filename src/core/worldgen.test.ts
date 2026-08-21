@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Params } from "./types";
 import { BIOMES } from "./biomes";
-import { buildWorld, recomputeRealms } from "./worldgen";
+import { applyRealmPaint, buildWorld, recomputeRealms } from "./worldgen";
 
 const PARAMS: Params = {
   seed: "Aurelmoor",
@@ -115,6 +115,20 @@ describe("buildWorld", () => {
     // no duplicate ids anywhere
     const ids = second.objects.map((o) => o.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("applyRealmPaint sets ownership and counts from the paint map", () => {
+    const { world } = buildWorld(PARAMS);
+    const realms = [
+      { id: 0, name: "Alpha", color: "#a35a34", seat: "—", seatHex: -1, hexes: 0 },
+      { id: 1, name: "Beta", color: "#4b6d7a", seat: "—", seatHex: -1, hexes: 0 },
+    ];
+    applyRealmPaint(world, { 3: 0, 4: 0, 5: 1 }, realms);
+    expect(world.owner[3]).toBe(0);
+    expect(world.owner[5]).toBe(1);
+    expect(world.owner[6]).toBe(-1);
+    expect(world.realms[0].hexes).toBe(2);
+    expect(world.realms[1].hexes).toBe(1);
   });
 
   it("recomputeRealms reproduces the generated territory", () => {

@@ -22,15 +22,21 @@ export const OBJECT_TYPES: Record<ObjectType, TypeMeta> = {
   town: { label: "Town", category: "settlement", road: true, shape: "circle", r: 3.8, inner: 1.3, defaultAllegiance: "friendly" },
   village: { label: "Village", category: "settlement", road: true, shape: "circle", r: 2.7, inner: 1.3, defaultAllegiance: "friendly" },
   keep: { label: "Keep", category: "settlement", road: true, shape: "circle", r: 3.8, inner: 1.3, defaultAllegiance: "friendly" },
+  citadel: { label: "Citadel", category: "settlement", road: true, shape: "poly", r: 5, inner: 1.7, poly: "-4.5,5 -4.5,-2.5 -3,-2.5 -3,-4.5 -1,-4.5 -1,-2.5 1,-2.5 1,-4.5 3,-4.5 3,-2.5 4.5,-2.5 4.5,5", defaultAllegiance: "friendly" },
   fort: { label: "Fort", category: "settlement", road: true, shape: "square", r: 3.7, inner: 1.3, defaultAllegiance: "neutral" },
   tower: { label: "Tower", category: "settlement", road: true, shape: "circle", r: 2.8, inner: 1.1, defaultAllegiance: "neutral" },
+  harbor: { label: "Harbor", category: "settlement", road: true, shape: "poly", r: 5, inner: 1.4, poly: "-5,-0.5 5,-0.5 3.2,4 -3.2,4", defaultAllegiance: "friendly" },
   ruin: { label: "Ruin", category: "site", road: false, shape: "poly", r: 4, inner: 0, poly: "-4,-4 4,-4 4,4 -4,4", defaultAllegiance: "neutral" },
   dungeon: { label: "Dungeon", category: "site", road: false, shape: "poly", r: 5, inner: 0, poly: "0,-5 4.4,0 0,5 -4.4,0", defaultAllegiance: "neutral" },
   camp: { label: "Camp", category: "site", road: false, shape: "poly", r: 4.6, inner: 0, poly: "0,-4.6 4.2,4 -4.2,4", defaultAllegiance: "neutral" },
   lair: { label: "Lair", category: "site", road: false, shape: "poly", r: 5, inner: 0, poly: "0,-5 4.8,-1.5 3,4.5 -3,4.5 -4.8,-1.5", defaultAllegiance: "hostile" },
   shrine: { label: "Shrine", category: "site", road: false, shape: "poly", r: 5, inner: 0, poly: "0,-5.2 4,-1.6 4,4.4 -4,4.4 -4,-1.6", defaultAllegiance: "neutral" },
+  temple: { label: "Temple", category: "site", road: false, shape: "poly", r: 6, inner: 0, poly: "0,-6 3,-1 1.6,-1 1.6,5 -1.6,5 -1.6,-1 -3,-1", defaultAllegiance: "neutral" },
   cave: { label: "Cave", category: "site", road: false, shape: "poly", r: 4.6, inner: 0, poly: "-4.4,4 -4.4,-0.5 0,-4.8 4.4,-0.5 4.4,4 1.8,4 1.8,0.6 -1.8,0.6 -1.8,4", defaultAllegiance: "neutral" },
+  mine: { label: "Mine", category: "site", road: false, shape: "poly", r: 5, inner: 0, poly: "-5,5 -3,-3 3,-3 5,5 2.2,5 1.2,0 -1.2,0 -2.2,5", defaultAllegiance: "neutral" },
+  portal: { label: "Portal", category: "site", road: false, shape: "poly", r: 5, inner: 0, poly: "-3.6,5 -3.6,0 -2.5,-3.3 0,-4.8 2.5,-3.3 3.6,0 3.6,5 1.7,5 1.7,0.4 0.9,-1.8 -0.9,-1.8 -1.7,0.4 -1.7,5", defaultAllegiance: "neutral" },
   monument: { label: "Monument", category: "site", road: false, shape: "poly", r: 5, inner: 0, poly: "-1.8,-5 1.8,-5 1.2,5 -1.2,5", defaultAllegiance: "neutral" },
+  wonder: { label: "Wonder", category: "site", road: false, shape: "poly", r: 5.2, inner: 0, poly: "0,-5.2 1.23,-1.7 4.95,-1.61 2,0.65 3.06,4.21 0,2.1 -3.06,4.21 -2,0.65 -4.95,-1.61 -1.23,-1.7", defaultAllegiance: "neutral" },
 };
 
 export const SETTLEMENT_TYPES: ObjectType[] = (
@@ -43,7 +49,8 @@ export const SITE_TYPES: ObjectType[] = (
 
 /** Types that get a place label on the map when the Names layer is on. */
 export const LABELED_TYPES = new Set<ObjectType>([
-  "city", "town", "keep", "fort", "tower", "dungeon", "lair", "shrine", "monument",
+  "city", "town", "keep", "citadel", "fort", "tower", "harbor",
+  "dungeon", "lair", "shrine", "temple", "monument", "wonder",
 ]);
 
 export function isSettlement(type: ObjectType): boolean {

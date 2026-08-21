@@ -33,6 +33,11 @@ export function TableLeft() {
   const popWaypoint = useStore((s) => s.popWaypoint);
   const revealAll = useStore((s) => s.revealAll);
   const hideAll = useStore((s) => s.hideAll);
+  const clearTrail = useStore((s) => s.clearTrail);
+  const trailLen = useStore((s) => s.trail.length);
+  const rollEncounter = useStore((s) => s.rollEncounter);
+  const partyHex = useStore((s) => s.partyHex);
+  const waypoints = useStore((s) => s.waypoints);
   const revealed = useStore((s) => s.revealed);
   const world = useStore((s) => s.world);
 
@@ -124,6 +129,24 @@ export function TableLeft() {
         </button>
       </div>
 
+      {party.weather === "crystalstorm" && (
+        <div
+          style={{
+            border: "1px solid #8a4a24",
+            background: "#3a2016",
+            borderRadius: 3,
+            padding: "7px 9px",
+            marginBottom: 13,
+            fontSize: 10,
+            color: "#f0c9a8",
+            lineHeight: 1.5,
+          }}
+        >
+          A stormglass passage has opened — the Scar is briefly traversable, and
+          perilous.
+        </div>
+      )}
+
       <button
         onClick={toggleMarch}
         style={{
@@ -201,7 +224,7 @@ export function TableLeft() {
           Find the way
         </button>
       </div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
         <button className="hx-hover-btn" style={secondaryBtn} onClick={clearRoute}>
           Clear way
         </button>
@@ -209,6 +232,15 @@ export function TableLeft() {
           Undo leg
         </button>
       </div>
+      {(partyHex !== null || waypoints.length > 0) && (
+        <button
+          className="hx-hover-btn"
+          style={{ ...secondaryBtn, width: "100%", flex: "none", marginBottom: 14 }}
+          onClick={rollEncounter}
+        >
+          Roll an encounter here
+        </button>
+      )}
 
       <div style={{ ...hairline, margin: "0 0 14px" }} />
 
@@ -221,6 +253,15 @@ export function TableLeft() {
           Shroud all
         </button>
       </div>
+      {trailLen > 0 && (
+        <button
+          className="hx-hover-btn"
+          style={{ ...secondaryBtn, width: "100%", flex: "none", marginTop: 6 }}
+          onClick={clearTrail}
+        >
+          Clear the party's trail
+        </button>
+      )}
       <div style={{ fontSize: 10, color: "#6f6656", marginTop: 8, lineHeight: 1.5 }}>
         {fogLabel}
       </div>

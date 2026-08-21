@@ -111,6 +111,10 @@ export default function App() {
         s.revealed,
         s.layers,
         s.theme,
+        s.partyHex,
+        s.trail,
+        s.realmPaint,
+        s.realmV,
       ];
     };
     let prev = snap();

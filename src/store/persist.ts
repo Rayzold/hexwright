@@ -1,8 +1,7 @@
 // localStorage persistence — named world slots plus an autosave.
 // A save only needs params + hand edits; the world grids regenerate from params.
 
-import { computeRoads } from "../core/worldgen";
-import { buildWorld } from "../core/worldgen";
+import { applyRealmPaint, buildWorld, computeRoads } from "../core/worldgen";
 import { normalizeObject } from "../core/objectTypes";
 import type {
   BiomeKey,
@@ -72,6 +71,10 @@ export function serialize(s: HexState): SaveFile {
     revealed: s.revealed ? Array.from(s.revealed) : [],
     layers: s.layers,
     theme: s.theme,
+    partyHex: s.partyHex,
+    trail: s.trail,
+    realms: s.world ? s.world.realms : [],
+    realmPaint: s.realmPaint,
   };
 }
 
@@ -103,6 +106,19 @@ export function deserialize(file: SaveFile): Partial<HexState> {
   });
   world.roads = computeRoads(world, objects);
   world.hexMiles = params.hexMiles;
+  // Hand-painted realms fully override the generated ones. Without any paint,
+  // keep the generated territory but restore saved realm names/colors by index.
+  const realmPaint = file.realmPaint || {};
+  if (Object.keys(realmPaint).length) {
+    applyRealmPaint(world, realmPaint, file.realms);
+  } else if (file.realms && file.realms.length) {
+    file.realms.forEach((r, i) => {
+      if (world.realms[i]) {
+        world.realms[i].name = r.name;
+        world.realms[i].color = r.color;
+      }
+    });
+  }
   return {
     params,
     paint: (file.paint || {}) as Record<number, BiomeKey>,
@@ -115,6 +131,9 @@ export function deserialize(file: SaveFile): Partial<HexState> {
     revealed: new Set<number>(file.revealed || []),
     layers: file.layers,
     theme: file.theme,
+    partyHex: file.partyHex ?? null,
+    trail: file.trail ?? [],
+    realmPaint,
     selected: null,
     waypoints: [],
     hover: null,
