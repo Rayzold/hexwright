@@ -1,5 +1,11 @@
 import { BIOMES } from "../core/biomes";
-import type { BiomeKey, ObjectType } from "../core/types";
+import {
+  ALLEGIANCE_LABEL,
+  OBJECT_TYPES,
+  SETTLEMENT_TYPES,
+  SITE_TYPES,
+} from "../core/objectTypes";
+import type { Allegiance, BiomeKey, ObjectType } from "../core/types";
 import { useStore } from "../store/useStore";
 import {
   MONO,
@@ -23,15 +29,12 @@ const BRUSHES: { tool: string; label: string }[] = [
 ];
 
 const STAMPS: { tool: string; label: string }[] = [
-  { tool: "city", label: "City" },
-  { tool: "town", label: "Town" },
-  { tool: "village", label: "Village" },
-  { tool: "keep", label: "Keep" },
-  { tool: "ruin", label: "Ruin" },
-  { tool: "dungeon", label: "Dungeon" },
-  { tool: "camp", label: "Camp" },
+  ...SETTLEMENT_TYPES.map((t) => ({ tool: t, label: OBJECT_TYPES[t].label })),
+  ...SITE_TYPES.map((t) => ({ tool: t, label: OBJECT_TYPES[t].label })),
   { tool: "", label: "Select" },
 ];
+
+const ALLEGIANCES: Allegiance[] = ["friendly", "neutral", "hostile"];
 
 const wellCaption: React.CSSProperties = {
   fontFamily: MONO,
@@ -215,13 +218,11 @@ export function ForgeRight() {
                 onChange={(e) => patchSel({ type: e.target.value as ObjectType })}
                 style={{ ...inputStyle, padding: "6px 7px" }}
               >
-                <option value="city">City</option>
-                <option value="town">Town</option>
-                <option value="village">Village</option>
-                <option value="keep">Keep</option>
-                <option value="ruin">Ruin</option>
-                <option value="dungeon">Dungeon</option>
-                <option value="camp">Camp</option>
+                {[...SETTLEMENT_TYPES, ...SITE_TYPES].map((t) => (
+                  <option key={t} value={t}>
+                    {OBJECT_TYPES[t].label}
+                  </option>
+                ))}
               </select>
             </div>
             <div style={{ flex: "0 0 104px" }}>
@@ -235,6 +236,89 @@ export function ForgeRight() {
                 style={{ ...inputStyle, padding: "6px 7px", textAlign: "right" }}
               />
             </div>
+          </div>
+
+          <label style={fieldLabel}>Allegiance</label>
+          <div
+            style={{
+              display: "flex",
+              gap: 2,
+              padding: 3,
+              background: "#100d0a",
+              border: "1px solid #322a20",
+              borderRadius: 3,
+              marginBottom: 12,
+            }}
+          >
+            {ALLEGIANCES.map((a) => {
+              const on = selObj.allegiance === a;
+              return (
+                <button
+                  key={a}
+                  onClick={() => patchSel({ allegiance: a })}
+                  style={{
+                    flex: "1 1 0",
+                    padding: "5px 6px",
+                    border: "none",
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    fontFamily: MONO,
+                    fontSize: 9,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    background: on
+                      ? a === "hostile"
+                        ? "#3a1613"
+                        : "#3a3025"
+                      : "transparent",
+                    color: on
+                      ? a === "hostile"
+                        ? "#e08a72"
+                        : "#f0e7d6"
+                      : "#8a7f6c",
+                  }}
+                >
+                  {ALLEGIANCE_LABEL[a]}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 11, color: "#9a8f7c" }}>Threat</span>
+            <div style={{ display: "flex", gap: 3 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  title={n + " / 5"}
+                  onClick={() => patchSel({ threat: selObj.threat === n ? 0 : n })}
+                  style={{
+                    width: 15,
+                    height: 15,
+                    borderRadius: "50%",
+                    cursor: "pointer",
+                    border: "1px solid " + (n <= selObj.threat ? "#8a4a24" : "#3a3025"),
+                    background: n <= selObj.threat ? "#c0402f" : "#241f19",
+                    padding: 0,
+                  }}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => patchSel({ cleared: !selObj.cleared })}
+              style={{
+                marginLeft: "auto",
+                padding: "4px 9px",
+                borderRadius: 3,
+                cursor: "pointer",
+                fontSize: 10,
+                border: "1px solid " + (selObj.cleared ? "#5c7a5f" : "#3a3025"),
+                background: selObj.cleared ? "#1f2a20" : "#241f19",
+                color: selObj.cleared ? "#8fb89a" : "#9a8f7c",
+              }}
+            >
+              {selObj.cleared ? "Cleared ✓" : "Active"}
+            </button>
           </div>
 
           <label style={fieldLabel}>Warden's notes</label>
@@ -390,6 +474,12 @@ export function ForgeRight() {
     const b = world.biome[i];
     const cost = BIOMES[b].cost;
     const hh = world.land[i] ? (world.el[i] - world.sea) / (1 - world.sea) : 0;
+    // a hostile lair on this hex raises the encounter odds
+    const hostileThreat = objects
+      .filter((o) => o.hex === i && o.allegiance === "hostile" && !o.cleared)
+      .reduce((a, o) => a + o.threat, 0);
+    const effWild = Math.min(1, BIOMES[b].wild + hostileThreat * 0.05);
+    const odds = Math.max(1, Math.round(effWild * 0.42 * 6));
     return [
       {
         k: "Movement cost",
@@ -400,7 +490,7 @@ export function ForgeRight() {
       },
       {
         k: "Encounter odds",
-        v: Math.max(1, Math.round(BIOMES[b].wild * 0.42 * 6)) + "-in-6",
+        v: odds + "-in-6" + (hostileThreat ? " (menaced)" : ""),
       },
       {
         k: "Elevation",
@@ -423,10 +513,14 @@ export function ForgeRight() {
 
   function tally(): string {
     if (!world) return "";
-    const counts = objects.reduce<Record<string, number>>((a, o) => {
-      a[o.type] = (a[o.type] || 0) + 1;
-      return a;
-    }, {});
+    let settlements = 0;
+    let sites = 0;
+    let hostile = 0;
+    for (const o of objects) {
+      if (OBJECT_TYPES[o.type]?.category === "settlement") settlements++;
+      else sites++;
+      if (o.allegiance === "hostile") hostile++;
+    }
     let landCount = 0;
     for (let i = 0; i < world.n; i++) landCount += world.land[i];
     return (
@@ -434,17 +528,12 @@ export function ForgeRight() {
       " land hexes · " +
       Math.round((landCount / world.n) * 100) +
       "% dry · " +
-      (counts.city || 0) +
-      " cities, " +
-      (counts.town || 0) +
-      " towns, " +
-      (counts.village || 0) +
-      " villages, " +
-      ((counts.ruin || 0) +
-        (counts.dungeon || 0) +
-        (counts.camp || 0) +
-        (counts.keep || 0)) +
-      " wild sites"
+      settlements +
+      " holdings · " +
+      sites +
+      " sites · " +
+      hostile +
+      " hostile"
     );
   }
 }

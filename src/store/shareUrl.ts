@@ -12,6 +12,7 @@ const NUM_KEYS: (keyof Params)[] = [
   "rivers",
   "settlements",
   "pois",
+  "menace",
 ];
 
 export function buildShareUrl(params: Params): string {

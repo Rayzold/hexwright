@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { BIOMES } from "../core/biomes";
 import { THEMES, biomeColor } from "../core/themes";
+import { hostileThreatMap } from "../core/objectTypes";
 import type { BiomeKey } from "../core/types";
 import { dateStr, pace, route as computeRoute } from "../core/travel";
 import { useStore } from "../store/useStore";
@@ -30,15 +31,22 @@ export function TableRight() {
   const journal = useStore((s) => s.journal);
   const theme = useStore((s) => s.theme);
   const paintV = useStore((s) => s.paintV);
+  const objects = useStore((s) => s.objects);
   const march = useStore((s) => s.march);
 
   const T = THEMES[theme];
 
   const r = useMemo(() => {
     if (!world) return null;
-    return computeRoute(world, waypoints, routeMode, party.speed);
+    return computeRoute(
+      world,
+      waypoints,
+      routeMode,
+      party.speed,
+      hostileThreatMap(objects)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world, waypoints, routeMode, party.speed, paintV, world?.hexMiles]);
+  }, [world, waypoints, routeMode, party.speed, paintV, world?.hexMiles, objects]);
 
   const hasCells = !!(r && r.cells);
   const blocked = !!(r && r.blocked);

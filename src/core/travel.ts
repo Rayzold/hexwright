@@ -153,7 +153,8 @@ export function route(
   world: World,
   waypoints: number[],
   routeMode: RouteMode,
-  speed: SpeedKey
+  speed: SpeedKey,
+  threatMap?: Map<number, number>
 ): RouteResult | null {
   if (!world || waypoints.length < 2) return null;
   const cells: number[] = [];
@@ -173,7 +174,9 @@ export function route(
     const b = world.biome[i];
     const cc = cellCost(world, i, speed);
     cost += (cc === null ? 4 : cc) * world.hexMiles;
-    wildSum += BIOMES[b].wild;
+    // hostile lairs along the way raise the odds of trouble
+    const threat = threatMap ? threatMap.get(i) || 0 : 0;
+    wildSum += Math.min(1, BIOMES[b].wild + threat * 0.05);
     counts[b] = (counts[b] || 0) + 1;
   }
   const pm = (cells.length - 1) * world.hexMiles;

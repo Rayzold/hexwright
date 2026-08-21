@@ -3,7 +3,8 @@
 
 import { computeRoads } from "../core/worldgen";
 import { buildWorld } from "../core/worldgen";
-import type { BiomeKey, SaveFile } from "../core/types";
+import { normalizeObject } from "../core/objectTypes";
+import type { BiomeKey, Params, SaveFile } from "../core/types";
 import type { HexState } from "./useStore";
 
 const SLOTS_KEY = "hexwright.saves.v1";
@@ -43,24 +44,29 @@ export function serialize(s: HexState): SaveFile {
  * recomputed from them.
  */
 export function deserialize(file: SaveFile): Partial<HexState> {
+  // Normalize objects so older saves gain the extended fields.
+  const savedObjects = (file.objects || []).map((o) => normalizeObject(o));
+  // Default any params missing from older saves (e.g. menace).
+  const params: Params = { ...file.params };
+  if (params.menace == null) params.menace = 30;
   const keep = {
     paint: file.paint || {},
     realmNames: file.realmNames || {},
-    objects: file.objects || [],
+    objects: savedObjects,
   };
-  const { world } = buildWorld(file.params, keep);
+  const { world } = buildWorld(params, keep);
   // Override with the saved objects so edits to generated holdings survive.
   // Dedupe by id defensively (older saves may carry a duplicate).
   const seen = new Set<string>();
-  const objects = (file.objects || []).filter((o) => {
+  const objects = savedObjects.filter((o) => {
     if (seen.has(o.id)) return false;
     seen.add(o.id);
     return true;
   });
   world.roads = computeRoads(world, objects);
-  world.hexMiles = file.params.hexMiles;
+  world.hexMiles = params.hexMiles;
   return {
-    params: { ...file.params },
+    params,
     paint: (file.paint || {}) as Record<number, BiomeKey>,
     realmNames: file.realmNames || {},
     world,

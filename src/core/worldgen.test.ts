@@ -14,6 +14,7 @@ const PARAMS: Params = {
   rivers: 50,
   settlements: 46,
   pois: 40,
+  menace: 30,
   edge: "sea",
 };
 
@@ -26,6 +27,20 @@ describe("buildWorld", () => {
       b.objects.map((o) => o.name + o.hex)
     );
     expect(Array.from(a.world.land)).toEqual(Array.from(b.world.land));
+  });
+
+  it("seeds hostile lairs when menace is high", () => {
+    // use the large extent so lair placement isn't saturated
+    const calm = buildWorld({ ...PARAMS, size: "large", menace: 0 });
+    const overrun = buildWorld({ ...PARAMS, size: "large", menace: 100 });
+    const hostiles = (objs: { allegiance: string }[]) =>
+      objs.filter((o) => o.allegiance === "hostile").length;
+    expect(hostiles(overrun.objects)).toBeGreaterThan(hostiles(calm.objects));
+    expect(hostiles(overrun.objects)).toBeGreaterThanOrEqual(4);
+    // settlements stay friendly
+    expect(
+      overrun.objects.filter((o) => o.type === "city").every((o) => o.allegiance === "friendly")
+    ).toBe(true);
   });
 
   it("supports the huge extent", () => {
@@ -66,6 +81,9 @@ describe("buildWorld", () => {
         hex: 5,
         pop: 100,
         notes: "",
+        allegiance: "friendly" as const,
+        threat: 0,
+        cleared: false,
       },
     ];
     const second = buildWorld(PARAMS, {

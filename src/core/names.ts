@@ -22,6 +22,14 @@ export const SITE_B = [
   "Abbey", "Barrow", "Cairn", "Cistern", "Fane", "Menhir", "Obelisk",
   "Sepulchre", "Warren", "Ziggurat", "Bastion", "Mine",
 ];
+export const MENACE_A = [
+  "Bloodfang", "Black", "Gloom", "Rotting", "Screaming", "Cinder", "Grave",
+  "Venom", "Skull", "Bone", "Ravening", "Dread",
+];
+export const MENACE_B = [
+  "Warren", "Hollow", "Nest", "Lair", "Den", "Pit", "Roost", "Hive",
+  "Warcamp", "Fastness", "Maw", "Barrows",
+];
 
 export function cap(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -37,6 +45,10 @@ export function placeName(rng: () => number): string {
 
 export function siteName(rng: () => number): string {
   return "The " + pick(rng, SITE_A) + " " + pick(rng, SITE_B);
+}
+
+export function lairName(rng: () => number): string {
+  return "The " + pick(rng, MENACE_A) + " " + pick(rng, MENACE_B);
 }
 
 export function realmName(rng: () => number): string {

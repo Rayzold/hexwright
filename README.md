@@ -80,6 +80,16 @@ Features added on top of the handoff:
   and renames (`Ctrl+Z` / `Ctrl+Shift+Z`, or the header buttons)
 - **Atlas** — a drawer listing every holding grouped by realm, with editable names
   for holdings and realms and a name filter
+- **Allegiance & threat** — every holding/site is friendly, neutral, or hostile
+  with a 0–5 threat rating; hostiles draw a crimson ring and raise encounter odds
+  along a route
+- **More site types** — Fort, Tower, Lair, Shrine, Cave, Monument, each with its
+  own glyph, on top of the original city/town/village/keep/ruin/dungeon/camp
+- **Adversaries** — a *Menace* slider seeds hostile lairs into the wilderness,
+  their threat scaling with remoteness and terrain wildness
+- **POI status** — mark a site cleared vs active; cleared sites dim on the map
+- **Atlas** groups holdings by realm, filters by allegiance, and lets you rename
+  or **remove** any establishment; a map **legend** keys the marker types
 - **Map extents** up to **Expanse (100 × 72 ≈ 7,200 hexes)**
 - **Pan & zoom** — drag-to-pan (middle mouse / space+drag) and cursor-anchored
   wheel zoom

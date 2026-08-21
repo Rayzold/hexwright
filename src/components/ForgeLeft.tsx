@@ -28,9 +28,20 @@ function settleWord(v: number) {
 function poiWord(v: number) {
   return v < 25 ? "few" : v < 60 ? "scattered" : "haunted";
 }
+function menaceWord(v: number) {
+  return v < 25 ? "quiet" : v < 55 ? "restless" : v < 80 ? "besieged" : "overrun";
+}
 
 interface SliderRow {
-  key: "sea" | "climate" | "wet" | "mountains" | "rivers" | "settlements" | "pois";
+  key:
+    | "sea"
+    | "climate"
+    | "wet"
+    | "mountains"
+    | "rivers"
+    | "settlements"
+    | "pois"
+    | "menace";
   label: string;
   min: number;
   max: number;
@@ -45,6 +56,7 @@ const SLIDERS: SliderRow[] = [
   { key: "rivers", label: "Watercourses", min: 0, max: 100, read: riverWord },
   { key: "settlements", label: "Habitation", min: 0, max: 100, read: settleWord },
   { key: "pois", label: "Wild sites", min: 0, max: 100, read: poiWord },
+  { key: "menace", label: "Menace", min: 0, max: 100, read: menaceWord },
 ];
 
 const LAYER_CHIPS: { key: keyof Layers; label: string }[] = [

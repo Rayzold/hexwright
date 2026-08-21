@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BIOMES } from "../core/biomes";
 import { S, SQ3, center, hexAt, hexPoints } from "../core/hex";
 import { THEMES } from "../core/themes";
 import { route as computeRoute } from "../core/travel";
+import {
+  DANGER,
+  LABELED_TYPES,
+  OBJECT_TYPES,
+  hostileThreatMap,
+} from "../core/objectTypes";
 import type { MapObject, World } from "../core/types";
 import { paintCanvas, type PaintOpts } from "../render/paint";
 import { clearMapRefs, setMapRefs } from "../render/mapExport";
@@ -13,15 +19,21 @@ interface Mark {
   id: string;
   x: number;
   y: number;
-  isSite: boolean;
+  shape: "circle" | "square" | "poly";
   r: number;
   rInner: number;
-  sitePoints: string;
+  poly?: string;
   fill: string;
   stroke: string;
+  ring: string | null; // hostile danger ring color
+  opacity: number; // dimmed when cleared
   label: string | null;
   labelSize: number;
   labelX: number;
+}
+
+function squarePts(r: number): string {
+  return `-${r},-${r} ${r},-${r} ${r},${r} -${r},${r}`;
 }
 
 function buildMarks(
@@ -39,31 +51,28 @@ function buildMarks(
   for (const o of objects) {
     if (o.hex >= world.n) continue;
     if (hidden && !revealed!.has(o.hex)) continue;
+    const meta = OBJECT_TYPES[o.type];
+    if (!meta) continue;
     const [x, y] = center(o.hex, world.w);
-    const isSite = o.type === "ruin" || o.type === "dungeon" || o.type === "camp";
-    const big = o.type === "city";
-    const mid = o.type === "town" || o.type === "keep";
-    const r = big ? 5 : mid ? 3.8 : 2.7;
+    const isSite = meta.category === "site";
     const selected = selectedId === o.id;
+    const hostile = o.allegiance === "hostile";
     marks.push({
       id: o.id,
       x,
       y,
-      isSite,
-      r,
-      rInner: big ? 2 : 1.3,
-      sitePoints:
-        o.type === "dungeon"
-          ? "0,-5 4.4,0 0,5 -4.4,0"
-          : o.type === "camp"
-            ? "0,-4.6 4.2,4 -4.2,4"
-            : "-4,-4 4,-4 4,4 -4,4",
+      shape: meta.shape,
+      r: meta.r,
+      rInner: meta.inner,
+      poly: meta.shape === "square" ? squarePts(meta.r) : meta.poly,
       fill: selected ? ACCENT : isSite ? T.site : T.paper,
-      stroke: selected ? ACCENT : T.ink,
+      stroke: selected ? ACCENT : hostile ? DANGER : T.ink,
+      ring: hostile && !selected ? DANGER : null,
+      opacity: o.cleared ? 0.4 : 1,
       label:
-        showLabels && (big || mid || o.type === "dungeon") ? o.name : null,
-      labelSize: big ? 9.4 : 7.8,
-      labelX: r + 3,
+        showLabels && LABELED_TYPES.has(o.type) ? o.name : null,
+      labelSize: o.type === "city" ? 9.4 : 7.8,
+      labelX: meta.r + 3,
     });
   }
   return marks;
@@ -75,6 +84,7 @@ export function MapStage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keyRef = useRef<string | null>(null);
   const zoomRef = useRef(1);
+  const [legendOpen, setLegendOpen] = useState(false);
   const spaceRef = useRef(false);
   const panRef = useRef<{ x: number; y: number; sl: number; st: number } | null>(null);
   const pannedRef = useRef(false);
@@ -258,10 +268,16 @@ export function MapStage() {
   // --- derived route ---
   const routeRes = useMemo(() => {
     if (!world || mode !== "table") return null;
-    return computeRoute(world, waypoints, routeMode, party.speed);
+    return computeRoute(
+      world,
+      waypoints,
+      routeMode,
+      party.speed,
+      hostileThreatMap(objects)
+    );
     // paintV included so brush edits recost the route
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [world, waypoints, routeMode, party.speed, paintV, world?.hexMiles]);
+  }, [world, waypoints, routeMode, party.speed, paintV, world?.hexMiles, objects]);
 
   const marks = useMemo(() => {
     if (!world) return [];
@@ -438,6 +454,7 @@ export function MapStage() {
               key={m.id}
               transform={`translate(${m.x.toFixed(1)},${m.y.toFixed(1)})`}
               style={{ cursor: "pointer" }}
+              opacity={m.opacity}
               onClick={(e) => {
                 e.stopPropagation();
                 useStore.getState().selectObject(m.id);
@@ -448,18 +465,27 @@ export function MapStage() {
               }}
             >
               <circle r={9} fill="transparent" />
-              {m.isSite ? (
-                <polygon
-                  points={m.sitePoints}
-                  fill={m.fill}
-                  stroke={m.stroke}
-                  strokeWidth={1.1}
+              {m.ring && (
+                <circle
+                  r={m.r + 2.6}
+                  fill="none"
+                  stroke={m.ring}
+                  strokeWidth={1.2}
+                  opacity={0.85}
                 />
-              ) : (
+              )}
+              {m.shape === "circle" ? (
                 <>
                   <circle r={m.r} fill={m.fill} stroke={m.stroke} strokeWidth={1.1} />
                   <circle r={m.rInner} fill={m.stroke} />
                 </>
+              ) : m.shape === "square" ? (
+                <>
+                  <polygon points={m.poly} fill={m.fill} stroke={m.stroke} strokeWidth={1.1} />
+                  <circle r={m.rInner} fill={m.stroke} />
+                </>
+              ) : (
+                <polygon points={m.poly} fill={m.fill} stroke={m.stroke} strokeWidth={1.1} />
               )}
               {m.label && (
                 <text
@@ -544,6 +570,80 @@ export function MapStage() {
           {hoverLabel}
         </div>
       </div>
+
+      <MapLegend open={legendOpen} onToggle={() => setLegendOpen((v) => !v)} theme={T} />
     </main>
+  );
+}
+
+function MapLegend({
+  open,
+  onToggle,
+  theme,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  theme: { paper: string; ink: string; site: string };
+}) {
+  const glyph = (child: React.ReactNode) => (
+    <svg width={16} height={16} viewBox="-8 -8 16 16" style={{ flex: "0 0 auto" }}>
+      {child}
+    </svg>
+  );
+  const rows: [React.ReactNode, string][] = [
+    [glyph(<><circle r={4.2} fill={theme.paper} stroke={theme.ink} strokeWidth={1.1} /><circle r={1.6} fill={theme.ink} /></>), "Settlement"],
+    [glyph(<><polygon points="-4,-4 4,-4 4,4 -4,4" fill={theme.paper} stroke={theme.ink} strokeWidth={1.1} /><circle r={1.4} fill={theme.ink} /></>), "Fort"],
+    [glyph(<polygon points="0,-5 4.4,0 0,5 -4.4,0" fill={theme.site} stroke={theme.ink} strokeWidth={1.1} />), "Dungeon / site"],
+    [glyph(<polygon points="0,-5 4.8,-1.5 3,4.5 -3,4.5 -4.8,-1.5" fill={theme.site} stroke={DANGER} strokeWidth={1.1} />), "Lair"],
+    [glyph(<circle r={5} fill="none" stroke={DANGER} strokeWidth={1.2} />), "Hostile"],
+  ];
+  return (
+    <div
+      style={{
+        position: "absolute",
+        right: 14,
+        bottom: 14,
+        pointerEvents: "auto",
+      }}
+    >
+      {open && (
+        <div
+          style={{
+            marginBottom: 6,
+            background: "rgba(16, 13, 10, 0.94)",
+            border: "1px solid #322a20",
+            borderRadius: 3,
+            padding: "10px 12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 7,
+          }}
+        >
+          {rows.map(([g, label], i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {g}
+              <span style={{ fontFamily: MONO, fontSize: 10, color: "#c9bda7" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        onClick={onToggle}
+        style={{
+          background: "rgba(16, 13, 10, 0.9)",
+          border: "1px solid #322a20",
+          borderRadius: 3,
+          padding: "6px 10px",
+          fontFamily: MONO,
+          fontSize: 10,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "#9a8f7c",
+          cursor: "pointer",
+        }}
+      >
+        {open ? "Key ▾" : "Key ▴"}
+      </button>
+    </div>
   );
 }

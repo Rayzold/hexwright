@@ -1,27 +1,26 @@
 import { useMemo, useState } from "react";
-import type { MapObject, Realm } from "../core/types";
+import {
+  ALLEGIANCE_COLOR,
+  OBJECT_TYPES,
+  SETTLEMENT_TYPES,
+  SITE_TYPES,
+} from "../core/objectTypes";
+import type { Allegiance, MapObject, ObjectType, Realm } from "../core/types";
 import { useStore } from "../store/useStore";
 import { MONO, SERIF } from "../ui/styles";
 
-const TYPE_ORDER: Record<string, number> = {
-  city: 0,
-  town: 1,
-  village: 2,
-  keep: 3,
-  ruin: 4,
-  dungeon: 5,
-  camp: 6,
+const TYPE_ORDER: ObjectType[] = [...SETTLEMENT_TYPES, ...SITE_TYPES];
+const orderOf = (t: ObjectType) => {
+  const i = TYPE_ORDER.indexOf(t);
+  return i < 0 ? 99 : i;
 };
 
-const TYPE_LABEL: Record<string, string> = {
-  city: "City",
-  town: "Town",
-  village: "Village",
-  keep: "Keep",
-  ruin: "Ruin",
-  dungeon: "Dungeon",
-  camp: "Camp",
-};
+const ALLEGIANCE_FILTERS: ("all" | Allegiance)[] = [
+  "all",
+  "friendly",
+  "neutral",
+  "hostile",
+];
 
 interface Group {
   realm: Realm | null;
@@ -47,8 +46,10 @@ export function Atlas() {
   const objects = useStore((s) => s.objects);
   const renameObject = useStore((s) => s.renameObject);
   const onRealmName = useStore((s) => s.onRealmName);
+  const deleteObject = useStore((s) => s.deleteObject);
   const hydrate = useStore((s) => s.hydrate);
   const [query, setQuery] = useState("");
+  const [allegFilter, setAllegFilter] = useState<"all" | Allegiance>("all");
 
   const groups = useMemo<Group[]>(() => {
     if (!world) return [];
@@ -66,8 +67,7 @@ export function Atlas() {
       }
     }
     const sortObjs = (a: MapObject, b: MapObject) =>
-      (TYPE_ORDER[a.type] ?? 9) - (TYPE_ORDER[b.type] ?? 9) ||
-      a.name.localeCompare(b.name);
+      orderOf(a.type) - orderOf(b.type) || a.name.localeCompare(b.name);
     const out: Group[] = world.realms.map((r) => ({
       realm: r,
       objects: (byRealm.get(r.id) || []).sort(sortObjs),
@@ -80,7 +80,9 @@ export function Atlas() {
   if (!atlasOpen) return null;
 
   const q = query.trim().toLowerCase();
-  const match = (o: MapObject) => !q || o.name.toLowerCase().includes(q);
+  const match = (o: MapObject) =>
+    (!q || o.name.toLowerCase().includes(q)) &&
+    (allegFilter === "all" || o.allegiance === allegFilter);
 
   const labelOf = (hex: number): string => {
     if (!world) return "—";
@@ -182,12 +184,49 @@ export function Atlas() {
               padding: "6px 8px",
             }}
           />
+          <div
+            style={{
+              display: "flex",
+              gap: 2,
+              marginTop: 8,
+              padding: 3,
+              background: "#100d0a",
+              border: "1px solid #322a20",
+              borderRadius: 3,
+            }}
+          >
+            {ALLEGIANCE_FILTERS.map((a) => {
+              const on = allegFilter === a;
+              return (
+                <button
+                  key={a}
+                  onClick={() => setAllegFilter(a)}
+                  style={{
+                    flex: "1 1 0",
+                    padding: "4px 6px",
+                    border: "none",
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    fontFamily: MONO,
+                    fontSize: 9,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    background: on ? "#3a3025" : "transparent",
+                    color: on ? "#f0e7d6" : "#8a7f6c",
+                  }}
+                >
+                  {a === "all" ? "All" : a}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ flex: "1 1 auto", overflowY: "auto", padding: "6px 16px 24px" }}>
           {groups.map((grp, gi) => {
             const shown = grp.objects.filter(match);
-            if (q && shown.length === 0) return null;
+            const filtering = !!q || allegFilter !== "all";
+            if (filtering && shown.length === 0) return null;
             return (
               <div key={grp.realm ? grp.realm.id : "unclaimed-" + gi} style={{ marginTop: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
@@ -222,13 +261,28 @@ export function Atlas() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingLeft: 19 }}>
                   {shown.map((o) => (
-                    <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <span
+                        title={o.allegiance}
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: "50%",
+                          flex: "0 0 auto",
+                          background: ALLEGIANCE_COLOR[o.allegiance],
+                          opacity: o.cleared ? 0.4 : 1,
+                        }}
+                      />
                       <input
                         className="hx-realm-name"
                         type="text"
                         value={o.name}
                         onChange={(e) => renameObject(o.id, e.target.value)}
-                        style={nameInput}
+                        style={{
+                          ...nameInput,
+                          textDecoration: o.cleared ? "line-through" : "none",
+                          opacity: o.cleared ? 0.6 : 1,
+                        }}
                       />
                       <button
                         onClick={() => focusHex(o.hex)}
@@ -244,8 +298,24 @@ export function Atlas() {
                           padding: 0,
                         }}
                       >
-                        {TYPE_LABEL[o.type]} · {labelOf(o.hex)}
-                        {o.pop ? " · " + o.pop.toLocaleString() : ""}
+                        {OBJECT_TYPES[o.type].label} · {labelOf(o.hex)}
+                        {o.threat ? " · T" + o.threat : ""}
+                      </button>
+                      <button
+                        onClick={() => deleteObject(o.id)}
+                        title="Remove"
+                        aria-label={"Remove " + o.name}
+                        style={{
+                          flex: "0 0 auto",
+                          background: "transparent",
+                          border: "none",
+                          color: "#7d5b52",
+                          fontSize: 12,
+                          cursor: "pointer",
+                          padding: "0 2px",
+                        }}
+                      >
+                        ✕
                       </button>
                     </div>
                   ))}

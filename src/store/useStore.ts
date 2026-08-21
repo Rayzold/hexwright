@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { BIOMES } from "../core/biomes";
 import { nbrs } from "../core/hex";
 import { placeName, siteName } from "../core/names";
+import { OBJECT_TYPES, hostileThreatMap } from "../core/objectTypes";
 import { hashStr, mulberry } from "../core/rng";
 import { dateStr, pace, route } from "../core/travel";
 import { computeRoads, recomputeRealms } from "../core/worldgen";
@@ -37,6 +38,7 @@ const DEFAULT_PARAMS: Params = {
   rivers: 50,
   settlements: 46,
   pois: 40,
+  menace: 30,
   edge: "sea",
 };
 
@@ -234,6 +236,8 @@ export interface HexState {
 
   onRealmName: (k: number, v: string) => void;
   patchSel: (patch: Partial<MapObject>) => void;
+  patchObject: (id: string, patch: Partial<MapObject>, tag?: string) => void;
+  deleteObject: (id: string) => void;
   deleteSel: () => void;
 
   // map interactions (component computes hex index)
@@ -418,12 +422,7 @@ export const useStore = create<HexState>((set, get) => ({
   },
 
   renameObject: (id, name) => {
-    get().pushHistory("obj:" + id + ":name");
-    set((s) => ({
-      objects: s.objects.map((o) =>
-        o.id === id ? { ...o, name, gen: false } : o
-      ),
-    }));
+    get().patchObject(id, { name }, "obj:" + id + ":name");
   },
 
   setRouteMode: (m) => set({ routeMode: m }),
@@ -445,7 +444,13 @@ export const useStore = create<HexState>((set, get) => ({
     const s = get();
     const world = s.world;
     if (!world) return;
-    const r = route(world, s.waypoints, s.routeMode, s.party.speed);
+    const r = route(
+      world,
+      s.waypoints,
+      s.routeMode,
+      s.party.speed,
+      hostileThreatMap(s.objects)
+    );
     if (!r || !r.cells) return;
     const days = (r.cost as number) / pace(s.party);
     const whole = Math.max(1, Math.ceil(days));
@@ -513,14 +518,29 @@ export const useStore = create<HexState>((set, get) => ({
   patchSel: (patch) => {
     const sel = get().selected;
     if (!sel || sel.kind !== "object") return;
+    get().patchObject(sel.id, patch);
+  },
+
+  patchObject: (id, patch, tag) => {
     // coalesce by field so typing a name is a single undo step
-    get().pushHistory("obj:" + sel.id + ":" + Object.keys(patch).join(","));
+    get().pushHistory(tag ?? "obj:" + id + ":" + Object.keys(patch).join(","));
     // Editing a generated holding promotes it to hand-placed so the edit
     // survives the next reforge.
     set((s) => ({
       objects: s.objects.map((o) =>
-        o.id === sel.id ? { ...o, ...patch, gen: false } : o
+        o.id === id ? { ...o, ...patch, gen: false } : o
       ),
+    }));
+  },
+
+  deleteObject: (id) => {
+    get().pushHistory();
+    set((s) => ({
+      objects: s.objects.filter((o) => o.id !== id),
+      selected:
+        s.selected && s.selected.kind === "object" && s.selected.id === id
+          ? null
+          : s.selected,
     }));
   },
 
@@ -615,10 +635,15 @@ export const useStore = create<HexState>((set, get) => ({
               ? 2200
               : tool === "village"
                 ? 320
-                : tool === "keep"
+                : tool === "keep" || tool === "fort"
                   ? 120
-                  : 0,
+                  : tool === "tower"
+                    ? 20
+                    : 0,
         notes: "",
+        allegiance: OBJECT_TYPES[type].defaultAllegiance,
+        threat: OBJECT_TYPES[type].defaultAllegiance === "hostile" ? 2 : 0,
+        cleared: false,
       };
       set((st) => ({
         objects: st.objects.concat([obj]),

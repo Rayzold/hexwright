@@ -4,7 +4,8 @@
 import { BIOMES } from "./biomes";
 import { Heap } from "./heap";
 import { S, SQ3, nbrs } from "./hex";
-import { placeName, realmName, siteName } from "./names";
+import { lairName, placeName, realmName, siteName } from "./names";
+import { OBJECT_TYPES, hasRoads } from "./objectTypes";
 import { fbm, hashStr, mulberry } from "./rng";
 import { path } from "./travel";
 import type {
@@ -259,6 +260,9 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
       hex: i,
       pop,
       notes: "",
+      allegiance: "friendly",
+      threat: 0,
+      cleared: false,
     });
   });
 
@@ -314,9 +318,11 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
   const keptNames = keep ? keep.realmNames : {};
   for (const k in keptNames) if (realms[+k]) realms[+k].name = keptNames[k];
 
-  // --- wild sites ---
+  // --- wild sites (neutral places of interest) ---
   const poiCount = Math.floor(3 + (p.pois / 100) * 30);
-  const siteTypes: MapObject["type"][] = ["ruin", "dungeon", "camp", "keep"];
+  const siteTypes: MapObject["type"][] = [
+    "ruin", "dungeon", "camp", "shrine", "cave", "monument",
+  ];
   for (let k = 0; k < poiCount; k++) {
     let tries = 0;
     let i = -1;
@@ -344,10 +350,75 @@ export function buildWorld(params: Params, keep?: KeepEdits): BuildResult {
       id: "s" + k,
       gen: true,
       type: t,
-      name: t === "keep" ? placeName(rng) + " Keep" : siteName(rng),
+      name: siteName(rng),
       hex: i,
-      pop: t === "keep" ? 40 + Math.floor(rng() * 300) : 0,
+      pop: 0,
       notes: "",
+      allegiance: "neutral",
+      threat: 1 + Math.round(rng()),
+      cleared: false,
+    });
+  }
+
+  // --- adversaries (hostile lairs / warbands in the wilderness) ---
+  const menace = p.menace ?? 30;
+  const lairCount = Math.floor(2 + (menace / 100) * 14);
+  const lairTypes: MapObject["type"][] = ["lair", "cave", "camp"];
+  const settleHexes = generated
+    .filter((o) => OBJECT_TYPES[o.type]?.category === "settlement")
+    .map((o) => o.hex);
+  const lairHexes: number[] = [];
+  for (let k = 0; k < lairCount; k++) {
+    let tries = 0;
+    let i = -1;
+    let minSettleDist = 0;
+    while (tries++ < 300) {
+      const t = Math.floor(rng() * n);
+      if (!land[t]) continue;
+      const c = t % w;
+      const r = (t - c) / w;
+      // stay clear of settlements and other lairs
+      let dS = Infinity;
+      for (const sh of settleHexes) {
+        const sc = sh % w;
+        const sr = (sh - sc) / w;
+        dS = Math.min(dS, Math.abs(sc - c) + Math.abs(sr - r));
+      }
+      if (dS < 4) continue;
+      let nearLair = false;
+      for (const lh of lairHexes) {
+        const lc = lh % w;
+        const lr = (lh - lc) / w;
+        if (Math.abs(lc - c) + Math.abs(lr - r) < 3) {
+          nearLair = true;
+          break;
+        }
+      }
+      if (nearLair) continue;
+      // prefer wild ground
+      if (BIOMES[biome[t]].wild < 0.4 && rng() < 0.6) continue;
+      i = t;
+      minSettleDist = dS === Infinity ? 8 : dS;
+      break;
+    }
+    if (i < 0) continue;
+    lairHexes.push(i);
+    const t = lairTypes[Math.floor(rng() * lairTypes.length)];
+    const threat = Math.max(
+      1,
+      Math.min(5, 1 + Math.floor(minSettleDist / 4) + (BIOMES[biome[i]].wild > 0.5 ? 1 : 0))
+    );
+    generated.push({
+      id: "l" + k,
+      gen: true,
+      type: t,
+      name: lairName(rng),
+      hex: i,
+      pop: 0,
+      notes: "",
+      allegiance: "hostile",
+      threat,
+      cleared: false,
     });
   }
 
@@ -443,13 +514,7 @@ export function recomputeRealms(world: World): void {
  */
 export function computeRoads(world: World, objects: MapObject[]): Road[] {
   const { w } = world;
-  const settle = objects.filter(
-    (o) =>
-      o.type === "city" ||
-      o.type === "town" ||
-      o.type === "village" ||
-      o.type === "keep"
-  );
+  const settle = objects.filter((o) => hasRoads(o.type));
   const seen = new Set<string>();
   const roads: Road[] = [];
   for (const a of settle) {

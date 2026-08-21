@@ -34,9 +34,18 @@ export type ObjectType =
   | "town"
   | "village"
   | "keep"
+  | "fort"
+  | "tower"
   | "ruin"
   | "dungeon"
-  | "camp";
+  | "camp"
+  | "lair"
+  | "shrine"
+  | "cave"
+  | "monument";
+
+/** Where a holding or site stands relative to the party. */
+export type Allegiance = "friendly" | "neutral" | "hostile";
 
 export interface Params {
   seed: string;
@@ -49,6 +58,8 @@ export interface Params {
   rivers: number;
   settlements: number;
   pois: number;
+  /** density of hostile lairs / warbands in the wilderness. */
+  menace: number;
   edge: EdgeKey;
 }
 
@@ -86,6 +97,11 @@ export interface MapObject {
   hex: number;
   pop: number;
   notes: string;
+  allegiance: Allegiance;
+  /** danger rating 0–5; 0 = untracked. */
+  threat: number;
+  /** whether a site has been dealt with (cleared) vs still active. */
+  cleared: boolean;
 }
 
 /**

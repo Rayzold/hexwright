@@ -15,6 +15,7 @@ const PARAMS: Params = {
   rivers: 50,
   settlements: 46,
   pois: 40,
+  menace: 30,
   edge: "sea",
 };
 
