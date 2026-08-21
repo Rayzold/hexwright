@@ -10,6 +10,8 @@ import {
   type SlotMeta,
 } from "../store/persist";
 import { exportMapPNG } from "../render/mapExport";
+import { PREMADE_MAPS } from "../premade";
+import type { SaveFile } from "../core/types";
 import { buildShareUrl } from "../store/shareUrl";
 import { useStore } from "../store/useStore";
 import { MONO } from "../ui/styles";
@@ -84,6 +86,11 @@ export function WorldsMenu() {
     refresh();
   };
   const [copied, setCopied] = useState(false);
+  const doLoadPremade = (build: () => SaveFile) => {
+    hydrate(deserialize(build()));
+    hydrate({ fitV: useStore.getState().fitV + 1 });
+    setOpen(false);
+  };
   const doExport = () => exportToFile(useStore.getState());
   const doExportPNG = () => exportMapPNG();
   const doCopyLink = async () => {
@@ -130,6 +137,40 @@ export function WorldsMenu() {
             boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
           }}
         >
+          <div
+            style={{
+              fontFamily: MONO,
+              fontSize: 9,
+              letterSpacing: "0.2em",
+              color: "#7d7361",
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            Premade worlds
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
+            {PREMADE_MAPS.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => doLoadPremade(m.build)}
+                style={{
+                  textAlign: "left",
+                  padding: "8px 10px",
+                  background: "#201b15",
+                  border: "1px solid #2b241c",
+                  borderRadius: 3,
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontSize: 12, color: "#d6cab4" }}>{m.name}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: "#7d7361", marginTop: 2 }}>
+                  {m.blurb}
+                </div>
+              </button>
+            ))}
+          </div>
+
           <div
             style={{
               fontFamily: MONO,

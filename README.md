@@ -116,3 +116,6 @@ sim config (no DM-secret material):
 - **Region presets** — generate a world in the image of any of the 14 regions
   (New Grandia, Thundermount, The Scar, The Bog, The Celestial Volcano, …), each
   biasing the flavour sliders and naming the world for the region
+- **Premade worlds** — the hand-authored **New Grandia** campaign map (a 5×5 grid
+  of regions with the Scar running down the centre and all the named holdings),
+  loadable from the Worlds menu

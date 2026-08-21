@@ -1,0 +1,40 @@
+import { describe, expect, it } from "vitest";
+import { deserialize } from "../store/persist";
+import { buildNewGrandiaSave } from "./newGrandia";
+
+describe("New Grandia premade", () => {
+  const save = buildNewGrandiaSave();
+
+  it("paints every hex of the 70x50 map", () => {
+    expect(Object.keys(save.paint)).toHaveLength(70 * 50);
+    // the Scar band exists down column 3
+    const has = (biome: string) => Object.values(save.paint).includes(biome as never);
+    expect(has("scar")).toBe(true);
+    expect(has("swamp")).toBe(true); // the Bog
+    expect(has("snow")).toBe(true); // frozen north
+  });
+
+  it("places the named locations within the map", () => {
+    const names = save.objects.map((o) => o.name);
+    for (const n of ["Thundermount", "New Grandia", "Wyldermoore", "Memento", "Fur Wehn"]) {
+      expect(names).toContain(n);
+    }
+    for (const o of save.objects) {
+      expect(o.hex).toBeGreaterThanOrEqual(0);
+      expect(o.hex).toBeLessThan(70 * 50);
+    }
+    // ids are unique
+    const ids = save.objects.map((o) => o.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("deserializes into a world carrying the painted terrain", () => {
+    const patch = deserialize(save);
+    expect(patch.world).toBeTruthy();
+    // every painted hex should survive into the world's biome array
+    for (const key of [0, 1785, 1798, 3185, 70 * 50 - 1]) {
+      expect(patch.world!.biome[key]).toBe(save.paint[key]);
+    }
+    expect(patch.objects?.some((o) => o.name === "New Grandia")).toBe(true);
+  });
+});
