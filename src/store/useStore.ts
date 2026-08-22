@@ -215,6 +215,7 @@ export interface HexState {
   leftOpen: boolean;
   rightOpen: boolean;
   atlasOpen: boolean;
+  helpOpen: boolean;
   undoStack: EditSnapshot[];
   redoStack: EditSnapshot[];
 
@@ -242,6 +243,7 @@ export interface HexState {
   toggleRight: () => void;
   setPanels: (left: boolean, right: boolean) => void;
   toggleAtlas: () => void;
+  setHelp: (open: boolean) => void;
 
   pushHistory: (tag?: string) => void;
   undo: () => void;
@@ -320,6 +322,7 @@ export const useStore = create<HexState>((set, get) => ({
   leftOpen: true,
   rightOpen: true,
   atlasOpen: false,
+  helpOpen: false,
   undoStack: [],
   redoStack: [],
 
@@ -398,6 +401,7 @@ export const useStore = create<HexState>((set, get) => ({
   toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
   setPanels: (left, right) => set({ leftOpen: left, rightOpen: right }),
   toggleAtlas: () => set((s) => ({ atlasOpen: !s.atlasOpen })),
+  setHelp: (open) => set({ helpOpen: open }),
 
   pushHistory: (tag) => {
     const s = get();

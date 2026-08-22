@@ -28,7 +28,13 @@ describe("New Grandia premade", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("deserializes into a world carrying the painted terrain", () => {
+  it("ships hand-painted realm borders", () => {
+    expect(save.realms).toBeTruthy();
+    expect(save.realms!.length).toBe(6);
+    expect(Object.keys(save.realmPaint || {}).length).toBeGreaterThan(1000);
+  });
+
+  it("deserializes into a world carrying the painted terrain and realms", () => {
     const patch = deserialize(save);
     expect(patch.world).toBeTruthy();
     // every painted hex should survive into the world's biome array
@@ -36,5 +42,10 @@ describe("New Grandia premade", () => {
       expect(patch.world!.biome[key]).toBe(save.paint[key]);
     }
     expect(patch.objects?.some((o) => o.name === "New Grandia")).toBe(true);
+    // realm ownership is applied and counted
+    let owned = 0;
+    for (let i = 0; i < patch.world!.n; i++) if (patch.world!.owner[i] >= 0) owned++;
+    expect(owned).toBeGreaterThan(1000);
+    expect(patch.world!.realms.some((r) => r.name === "The Free City of New Grandia")).toBe(true);
   });
 });

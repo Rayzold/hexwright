@@ -30,6 +30,7 @@ export function Header() {
   const canRedo = useStore((s) => s.redoStack.length > 0);
   const toggleAtlas = useStore((s) => s.toggleAtlas);
   const atlasOpen = useStore((s) => s.atlasOpen);
+  const setHelp = useStore((s) => s.setHelp);
 
   return (
     <header
@@ -144,6 +145,15 @@ export function Header() {
           title={theme === "parchment" ? "Parchment map — switch to dusk" : "Dusk map — switch to parchment"}
         >
           {theme === "parchment" ? "☀" : "☾"}
+        </button>
+        <button
+          className="hx-hover-btn"
+          style={{ ...zoomBtn, width: "auto", padding: "0 10px", fontSize: 13 }}
+          onClick={() => setHelp(true)}
+          title="How to use Hexwright"
+          aria-label="Open the guide"
+        >
+          ?
         </button>
         <WorldsMenu />
         <div style={{ width: 1, height: 22, background: "#322a20", margin: "0 2px" }} />

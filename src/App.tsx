@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Atlas } from "./components/Atlas";
+import { Help } from "./components/Help";
 import { ForgeLeft } from "./components/ForgeLeft";
 import { ForgeRight } from "./components/ForgeRight";
 import { Header } from "./components/Header";
@@ -90,6 +91,18 @@ export default function App() {
       }
     }
     useStore.getState().build(false);
+  }, []);
+
+  // --- open the guide once, for first-time visitors ---
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("hexwright.seenHelp")) {
+        useStore.getState().setHelp(true);
+        localStorage.setItem("hexwright.seenHelp", "1");
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // --- autosave (debounced) when a *persisted* slice changes ---
@@ -199,6 +212,7 @@ export default function App() {
         )}
       </div>
       <Atlas />
+      <Help />
     </div>
   );
 }

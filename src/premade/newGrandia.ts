@@ -6,7 +6,7 @@
 
 import { vnoise } from "../core/rng";
 import { CAMPAIGN_START_DAY } from "../core/travel";
-import type { BiomeKey, MapObject, ObjectType, SaveFile } from "../core/types";
+import type { BiomeKey, MapObject, ObjectType, Realm, SaveFile } from "../core/types";
 
 const W = 100;
 const H = 72;
@@ -36,6 +36,16 @@ function inScar(c: number, r: number): boolean {
   return d < edge;
 }
 
+/** Warped 5x5 grid cell for a hex (shared by terrain and realms). */
+function cellOf(c: number, r: number): { cc: number; cr: number; fx: number; fy: number } {
+  const [cw, rw] = warp(c, r);
+  const ccF = (cw / W) * 5;
+  const crF = (rw / H) * 5;
+  const cc = Math.max(0, Math.min(4, Math.floor(ccF)));
+  const cr = Math.max(0, Math.min(4, Math.floor(crF)));
+  return { cc, cr, fx: ccF - cc, fy: crF - cr };
+}
+
 /**
  * Biome for a hex, from its (warped) grid cell.
  *
@@ -58,13 +68,7 @@ function biomeAt(c: number, r: number): BiomeKey {
     return "scar";
   }
 
-  const [cw, rw] = warp(c, r);
-  const ccF = (cw / W) * 5;
-  const crF = (rw / H) * 5;
-  const cc = Math.max(0, Math.min(4, Math.floor(ccF)));
-  const cr = Math.max(0, Math.min(4, Math.floor(crF)));
-  const fx = ccF - cc;
-  const fy = crF - cr;
+  const { cc, cr, fx, fy } = cellOf(c, r);
 
   // Row A — the frozen north edge.
   if (cr === 0) {
@@ -147,6 +151,32 @@ const OBJ_SPECS: ObjSpec[] = [
   { type: "shrine", name: "The Silent Fane", c: 12, r: 64, allegiance: "neutral", threat: 1 },
 ];
 
+// The realms that hold the map, indexed by id. Seat hexes point at the capitals.
+const REALMS: Realm[] = [
+  { id: 0, name: "The Thundermount Combine", color: "#4b6d7a", seat: "Thundermount", seatHex: 11 * W + 50, hexes: 0 },
+  { id: 1, name: "The Free City of New Grandia", color: "#6a6a3c", seat: "New Grandia", seatHex: 36 * W + 70, hexes: 0 },
+  { id: 2, name: "The Fur Wehn Suzerainty", color: "#7a4a63", seat: "Fur Wehn", seatHex: 22 * W + 90, hexes: 0 },
+  { id: 3, name: "The Wyldermoore Reach", color: "#3f6b56", seat: "Wyldermoore", seatHex: 50 * W + 30, hexes: 0 },
+  { id: 4, name: "The Memento Concord", color: "#5b5b8a", seat: "Memento", seatHex: 58 * W + 50, hexes: 0 },
+  { id: 5, name: "The Ember Lords", color: "#a35a34", seat: "The Celestial Volcano", seatHex: 40 * W + 92, hexes: 0 },
+];
+
+// Region cell (row A-E, col 1-5) -> realm id, or -1 for unclaimed ground.
+const REALM_MAP: number[][] = [
+  [0, 0, 0, 0, 0], // A — Thundermount's frozen north
+  [0, 0, 1, 1, 2], // B
+  [0, 1, 1, 1, 5], // C
+  [3, 3, 4, 1, 5], // D
+  [3, 3, 4, -1, 5], // E (the desert at E4 is unclaimed)
+];
+
+/** Realm id owning a hex, or -1 (the Scar and the deep wastes stay unclaimed). */
+function realmAt(c: number, r: number): number {
+  if (biomeAt(c, r) === "scar") return -1;
+  const { cc, cr } = cellOf(c, r);
+  return REALM_MAP[cr][cc];
+}
+
 function makeObject(spec: ObjSpec, k: number): MapObject {
   return {
     id: "pm" + k,
@@ -165,9 +195,13 @@ function makeObject(spec: ObjSpec, k: number): MapObject {
 /** Build the New Grandia save file. */
 export function buildNewGrandiaSave(): SaveFile {
   const paint: Record<number, BiomeKey> = {};
+  const realmPaint: Record<number, number> = {};
   for (let r = 0; r < H; r++) {
     for (let c = 0; c < W; c++) {
-      paint[idx(c, r)] = biomeAt(c, r);
+      const i = idx(c, r);
+      paint[i] = biomeAt(c, r);
+      const owner = realmAt(c, r);
+      if (owner >= 0) realmPaint[i] = owner;
     }
   }
   const objects = OBJ_SPECS.map(makeObject);
@@ -191,12 +225,13 @@ export function buildNewGrandiaSave(): SaveFile {
     paint,
     objects,
     realmNames: {},
+    realms: REALMS.map((r) => ({ ...r })),
+    realmPaint,
     party: { speed: "foot", march: false, season: "embers", weather: "clear" },
     day: CAMPAIGN_START_DAY,
     journal: [],
     revealed: [],
-    // Realms are procedural, so the border layer is left off for this hand map.
-    layers: { grid: true, rivers: true, roads: true, borders: false, labels: true },
+    layers: { grid: true, rivers: true, roads: true, borders: true, labels: true },
     theme: "parchment",
   };
 }

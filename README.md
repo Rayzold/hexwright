@@ -129,3 +129,8 @@ sim config (no DM-secret material):
   marches
 - **Stormglass Passage** — a Crystal storm opens a traversable (and perilous)
   passage through the Scar, lit on the map
+- **In-app guide** — a **?** button (auto-opens on first visit) explaining both
+  modes and the tools
+- The **New Grandia** premade ships with hand-painted realm borders for its six
+  powers (Thundermount, New Grandia, Fur Wehn, Wyldermoore, Memento, the Ember
+  Lords), the Scar left unclaimed
