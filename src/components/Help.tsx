@@ -38,6 +38,7 @@ const SECTIONS: Section[] = [
     lines: [
       "Sight toggles Warden (you see everything) and Party (unexplored hexes stay under fog).",
       "Pan by dragging with the middle mouse button, or holding Space and dragging. The wheel zooms toward the cursor.",
+      "The ☀ / ☾ button switches the map between the parchment and dusk themes.",
       "The Key (bottom-right of the map) explains the marker shapes.",
     ],
   },

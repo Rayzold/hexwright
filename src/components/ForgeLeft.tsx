@@ -1,4 +1,5 @@
 import { REGION_PRESETS } from "../core/regions";
+import { SectionTitle } from "./SectionTitle";
 import { useStore } from "../store/useStore";
 import {
   MONO,
@@ -7,7 +8,6 @@ import {
   fieldLabel,
   hairline,
   inputStyle,
-  sectionHeader,
 } from "../ui/styles";
 import type { Layers } from "../core/types";
 
@@ -81,7 +81,12 @@ export function ForgeLeft() {
 
   return (
     <div>
-      <div style={{ ...sectionHeader, marginBottom: 12 }}>The Forge</div>
+      <SectionTitle
+        marginBottom={12}
+        hint="Set a seed and the dials, then Forge the world. Reforging keeps your hand-placed holdings, painted terrain, and renamed realms."
+      >
+        The Forge
+      </SectionTitle>
 
       <label style={fieldLabel}>Region preset</label>
       <select
@@ -239,7 +244,9 @@ export function ForgeLeft() {
 
       <div style={{ ...hairline, margin: "20px 0 14px" }} />
 
-      <div style={sectionHeader}>Layers</div>
+      <SectionTitle hint="Toggle what the map draws — the hex grid, rivers, roads, realm borders, and place names.">
+        Layers
+      </SectionTitle>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
         {LAYER_CHIPS.map((lc) => (
           <button

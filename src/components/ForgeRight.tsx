@@ -6,6 +6,7 @@ import {
   SITE_TYPES,
 } from "../core/objectTypes";
 import type { Allegiance, BiomeKey, ObjectType } from "../core/types";
+import { SectionTitle } from "./SectionTitle";
 import { useStore } from "../store/useStore";
 import {
   MONO,
@@ -100,7 +101,9 @@ export function ForgeRight() {
 
   return (
     <div>
-      <div style={sectionHeader}>Terrain brush</div>
+      <SectionTitle hint="Pick a ground and paint it onto the map. Size sets the brush radius; Fill floods a connected area. Water erases rivers.">
+        Terrain brush
+      </SectionTitle>
       <div
         style={{
           display: "grid",
@@ -162,7 +165,9 @@ export function ForgeRight() {
           : brushHint}
       </div>
 
-      <div style={sectionHeader}>Stamps</div>
+      <SectionTitle hint="Place a holding or site: pick a kind, then click a hex. Select clears the tool so you can click holdings to edit or drag them.">
+        Stamps
+      </SectionTitle>
       <div
         style={{
           display: "grid",
@@ -187,7 +192,12 @@ export function ForgeRight() {
 
       <div style={{ ...hairline, margin: "0 0 14px" }} />
 
-      <div style={{ ...sectionHeader, marginBottom: 12 }}>Inspector</div>
+      <SectionTitle
+        marginBottom={12}
+        hint="Select a holding or a hex to read and edit it — name, kind, souls, allegiance, threat, notes, and whether a site is cleared."
+      >
+        Inspector
+      </SectionTitle>
 
       {!selected && (
         <div
@@ -202,6 +212,9 @@ export function ForgeRight() {
           }}
         >
           Nothing selected. Click a holding to name it, or a hex to read the ground.
+          <div style={{ marginTop: 8, color: "#6f6656" }}>
+            Try: pick a Stamp above and click the map to place one.
+          </div>
         </div>
       )}
 

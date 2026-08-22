@@ -5,7 +5,8 @@ import { hostileThreatMap } from "../core/objectTypes";
 import type { BiomeKey } from "../core/types";
 import { dateStr, pace, route as computeRoute } from "../core/travel";
 import { useStore } from "../store/useStore";
-import { MONO, SERIF, emberBtn, hairline, sectionHeader } from "../ui/styles";
+import { MONO, SERIF, emberBtn, hairline } from "../ui/styles";
+import { SectionTitle } from "./SectionTitle";
 
 const wellCaption: React.CSSProperties = {
   fontFamily: MONO,
@@ -104,7 +105,12 @@ export function TableRight() {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <div style={{ ...sectionHeader, marginBottom: 12 }}>Passage</div>
+        <SectionTitle
+          marginBottom={12}
+          hint="Distances and days for the plotted route. March the way to advance the calendar, lift the fog, and roll the encounter checks."
+        >
+          Passage
+        </SectionTitle>
 
         {noRoute && !blocked && (
           <div
@@ -119,6 +125,9 @@ export function TableRight() {
             }}
           >
             No way plotted. Click a hex on the map to set the party down.
+            <div style={{ marginTop: 8, color: "#6f6656" }}>
+              Try: click a start, then a destination — legs draw between them.
+            </div>
           </div>
         )}
 
@@ -297,10 +306,12 @@ export function TableRight() {
       </div>
 
       <div style={{ ...hairline, margin: "0 0 14px" }} />
-      <div style={sectionHeader}>Log</div>
+      <SectionTitle hint="A record of each march — the dates, the distance, and whether the road was quiet. Encounter rolls land here too.">
+        Log
+      </SectionTitle>
       {journal.length === 0 && (
         <div style={{ fontSize: 11, color: "#6f6656", lineHeight: 1.6 }}>
-          Nothing yet. Marches are recorded here.
+          Nothing yet. Plot a route and March the way to fill the log.
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>

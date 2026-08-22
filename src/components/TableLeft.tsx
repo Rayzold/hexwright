@@ -20,6 +20,7 @@ import {
   sectionHeader,
   tab,
 } from "../ui/styles";
+import { SectionTitle } from "./SectionTitle";
 
 export function TableLeft() {
   const party = useStore((s) => s.party);
@@ -52,7 +53,12 @@ export function TableLeft() {
 
   return (
     <div>
-      <div style={{ ...sectionHeader, marginBottom: 12 }}>The Party</div>
+      <SectionTitle
+        marginBottom={12}
+        hint="How the party travels: Pace, Season, and Weather set the effective speed. Forced march is faster but exhausting."
+      >
+        The Party
+      </SectionTitle>
 
       <label style={fieldLabel}>Pace</label>
       <select
@@ -202,7 +208,12 @@ export function TableLeft() {
 
       <div style={{ ...hairline, margin: "0 0 14px" }} />
 
-      <div style={{ ...sectionHeader, marginBottom: 8 }}>Plotting</div>
+      <SectionTitle
+        marginBottom={8}
+        hint="Click hexes on the map to lay a route. By hand walks straight legs; Find the way takes the cheapest path. Drag a waypoint to bend it."
+      >
+        Plotting
+      </SectionTitle>
       <div style={{ fontSize: 11, color: "#8e8471", lineHeight: 1.65, marginBottom: 10 }}>
         {plotHint}
       </div>
@@ -244,7 +255,12 @@ export function TableLeft() {
 
       <div style={{ ...hairline, margin: "0 0 14px" }} />
 
-      <div style={{ ...sectionHeader, marginBottom: 8 }}>Fog</div>
+      <SectionTitle
+        marginBottom={8}
+        hint="The Party sight-view hides unexplored hexes. Reveal or shroud everything here; marching lifts the fog along the road."
+      >
+        Fog
+      </SectionTitle>
       <div style={{ display: "flex", gap: 6 }}>
         <button className="hx-hover-btn" style={secondaryBtn} onClick={revealAll}>
           Reveal all
