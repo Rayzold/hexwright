@@ -208,7 +208,7 @@ export function buildNewGrandiaSave(): SaveFile {
   return {
     version: 1,
     params: {
-      seed: "New Grandia",
+      seed: "Land of the Scar",
       size: "huge",
       hexMiles: 8,
       sea: 42,

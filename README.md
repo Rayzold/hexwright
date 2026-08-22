@@ -116,8 +116,8 @@ sim config (no DM-secret material):
 - **Region presets** — generate a world in the image of any of the 14 regions
   (New Grandia, Thundermount, The Scar, The Bog, The Celestial Volcano, …), each
   biasing the flavour sliders and naming the world for the region
-- **Premade worlds** — the hand-authored **New Grandia** campaign map (a 5×5 grid
-  of regions with the Scar as a central oval and all the named holdings),
+- **Premade worlds** — the hand-authored **Land of the Scar** campaign map (a 5×5
+  grid of regions with the Scar as a central oval and all the named holdings),
   loadable from the Worlds menu
 - **More map icons** — Citadel, Harbor, Temple, Mine, Portal, Wonder, on top of
   the earlier set
@@ -131,6 +131,6 @@ sim config (no DM-secret material):
   passage through the Scar, lit on the map
 - **In-app guide** — a **?** button (auto-opens on first visit) explaining both
   modes and the tools
-- The **New Grandia** premade ships with hand-painted realm borders for its six
-  powers (Thundermount, New Grandia, Fur Wehn, Wyldermoore, Memento, the Ember
+- The **Land of the Scar** premade ships with hand-painted realm borders for its
+  six powers (Thundermount, New Grandia, Fur Wehn, Wyldermoore, Memento, the Ember
   Lords), the Scar left unclaimed
